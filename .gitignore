@@ -1,0 +1,37 @@
+# CLion / JetBrains
+.idea/
+cmake-build-*/
+
+# CMake
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# SynthLab: must be obtained by the user, not part of the repository
+SDKs/SynthLab/
+SynthLabSamples/
+
+# foleys_gui_magic: deliberately DO NOT ignore, as it is vendored and part of the repository
+# modules/foleys_gui_magic/  <- deliberately not entered
+
+
+# Compiled plugins / binaries
+*.o
+*.obj
+*.so
+*.dylib
+*.vst3
+*.exe
+
+# OS-trash
+.DS_Store
+Thumbs.db
+
+# editor backups
+*~
+*.swp
+
+# temporary files
+*.tmp
+*.temp

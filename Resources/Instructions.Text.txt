@@ -1,0 +1,81 @@
+        	Tutorial
+
+Most controls and display elements are self-explanatory. Tooltips aid understanding.
+
+There are a total of six sound generators: four wavetable oscillators, a 'reverse 
+spectrogram,' and a classic sampler. The four wavetable oscillators are located on 
+tab 1 and can be accessed as sub-pages via vertical navigation.
+
+Tab 2 accesses 8 LFOs assigned to all 4 wavetables—specifically, 2 LFOs for each 
+wavetable oscillator: one for frequency and the other for amplitude modulation. 
+These LFOs can be controlled in greater detail and with a clearer layout on the 
+tab 2 page.
+
+A sampler library is available for the page on tab3.
+
+The page on tab 4 is something special; here, the sound is generated using an
+inverted spectrogram. You can use your mouse to draw curves, lines, and shapes
+in the black area; these represent the frequencies and overtones of a signal 
+along the Y-axis and are used to synthesize the sound along the time axis 
+(3 seconds/ adjustable).
+
+On Tab 4, an envelope is simulated that controls and modulates a filter's 
+frequency. This affects the mixed master audio signal, which is then routed to
+the effects page (Tab 5).
+
+On Tab 4, an envelope is simulated that controls and modulates the frequency of
+a filter. This applies to the mixed master audio signal, which is routed to the
+effects page (Tab 5). The effects page (Tab 5) contains classic effects and is 
+selfexplanatory.
+
+Finally, we come to the Master page. Here, all sound generators can be mixed 
+separately, and a separate envelope can be configured. The global vertical bar
+on the left—which remains visible at all times—is also part of the Master
+-Module. This is where you adjust the bass, treble, and mid-range frequencies
+for the output (as well as the volume, which is also found on the Master page
+itself). Each volume control for the sound generators is also available on the
+respective pages.
+
+The following is a simplified, schematic representation of the synthesizer's 
+architecture.
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+				Anleitung
+
+Die meisten Regler und Anzeige-Elemente sind selbsterklärend.Tooltips tragen
+zum Verständnis bei.
+
+Es gibt insgesamt 6 Tonerzeuger: 4 WaveTable-Oszillatoren, ein 'reverse Spectro-
+gramm' und einen klassischen Sampler. Die 4 WaveTable-Oscillatoren liegen auf 
+tab1 und können über vertikale Navigation als Unterseiten aufgerufen werden. 
+
+tab2 ruft 8 LFO's auf, welche allen 4 WaveTables zugeordnet sind, und zwar jeweils 
+2 LFO's für einen WaveTable-Oszillator - einen für die Frequenz - und den anderen 
+für die Amplituden-Modulation. Diese LFO's können auf der Seite für tab2 noch 
+einmal spezieller und übersichtlicher bedient werden.
+
+Für die Seite auf tab3 steht eine Sampler-Bibliothek zur Verfügung.
+
+Die Seite auf tab4 ist etwas Besonderes Hier wird der Klang durch ein umgekehrtes 
+Spectrogramm erzeugt. In das schwarze Feld kann man mit der Maus Kurven, Linien 
+und Figuren zeichnen, die in der Y-Achse die Frequenzen und Obertöne eines 
+Signals darstellen und daraus auf der Zeitachse (3 Sekunden) den Ton 
+synthetisieren.
+
+Auf Seite auf Tab4 wird eine Hüllkurve Simuliert, welche die Frequenz eines 
+Filters steuert und verändert. Dies betrifft schon den abgemischten Master-Ton, 
+welcher auf die Effekt-Seite (Seite tab5) weitergeleitet wird.
+
+Die Effekt-Seite (tab5) beinhaltet klassische Effekte und ist selbst erklärend.
+
+Schließlich kommen wir auf die Master-Seite. Hier können alle Klangerzeuger 
+separat abgemischt werden. Ebenfalls kann hier eine separate Hüllkurve ein-
+gestellt werden. Die globale, vertikale Leiste, auf der linken Seite, welche 
+immer zu sehen ist, gehört ebenfalls zum Master-Modul. Hier stellt man die Bässe, 
+Höhen und Mitten für den Output ein (so wie ebenfalls die Lautstärke, welche 
+natürlich auf der Master-Seite wieder zu finden ist) Jeder Volumenregler für die 
+Klangerzeuger findet sich auf den entsprechenden Seiten noch einmal wieder.
+
+Es folgt eine vereinfachte, skizzenhafte Darstellung des Aufbaus des 
+Synthesizers.
