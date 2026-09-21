@@ -46,9 +46,12 @@ void SynthVoice::startNote(const int midiNoteNumber, const float velocity, juce:
         noteEvent.midiNoteNumber = midiNoteNumber;
         // frequency is calculated as: f = 440 * 2^((n-69)/12):
         noteEvent.midiPitch = SynthLab::midiNoteNumberToOscFrequency(midiNoteNumber);
+        noteEvent.midiNoteVelocity = static_cast<uint32_t> (velocity * 127.0f);
         gainWtAdsrs[ind].noteOn();
         filterAdsrs[ind].noteOn();
-        wtOscillators[ind]->doNoteOn(noteEvent);
+        filters[ind]->reset();
+        if (wtOscillators[ind] != nullptr)
+            wtOscillators[ind]->doNoteOn (noteEvent);
     }
 }
 
@@ -161,40 +164,46 @@ void SynthVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
             const uint32_t samplesToRender = static_cast<uint32_t>(
                 std::min(samplesRemaining, static_cast<int>(kWtBlockSize)));
 
-            // ── 1. FM: fineDetune modulate once per sub-block ─────────────
-            // (LFO < 20 Hz, 64 samples granularity is entirely sufficient)
-            {
-                const float fmSignal = lfoFmData[ind].getNextFMSample();
-                // fmDepth: 0..N → Deflection in Cents
-                const float fmCents  = fmSignal * fmDepth[ind];
-                auto p = wtOscillators[ind]->getParameters();
-                p->fineDetune = baseTune[ind] + fmCents;
-                wtOscillators[ind]->update(); // make the parameter change effectiven
+                // ── 1. FM: fineDetune modulate once per sub-block ─────────────
+                // (LFO < 20 Hz, 64 samples granularity is entirely sufficient)
+                {
+                    const float fmSignal = lfoFmData[ind].getNextFMSample();
+                    const float fmCents  = fmSignal * fmDepth[ind];
+                    auto p = wtOscillators[ind]->getParameters();
+
+                    // Kanal-FM + Master-FM zusammenrechnen:
+                    p->fineDetune = baseTune[ind] + fmCents + masterFmCents;
+                    wtOscillators[ind]->update();
+                }
+
+                // ── 2. render WaveTable  ──────────────────────────────────────────
+                wtOscillators[ind]->render(samplesToRender);
+
+                auto wtAudioBuffers = wtOscillators[ind]->getAudioBuffers();
+                if (wtAudioBuffers == nullptr) break;
+
+                float* wtLeft  = wtAudioBuffers->getOutputBuffer(0);
+                float* wtRight = wtAudioBuffers->getOutputBuffer(1);
+                if (wtLeft == nullptr) break;
+
+                // ── 3. Filter-ADSR: average value for this sub-block ────────
+                // setCutoffFrequency ist expensive (tan, sqrt) → not per Sample!
+                // for an envelope, once every 64 samples is perfectly sufficient
+                // executed ONLY if the filter for this channel is active!
+                if (filterIsEnabled[ind] && filters[ind] != nullptr)
+                {
+                    float filterEnvVal = 0.0f;
+                    for (uint32_t s = 0; s < samplesToRender; ++s)
+                        filterEnvVal += filterAdsrs[ind].getNextSample(); // ADSR schreitet vor
+                    filterEnvVal /= static_cast<float>(samplesToRender); // Mittelwert
+
+                    const float modFilterFreq = juce::jlimit(
+                        20.0f, 20000.0f,
+                        filterFreq[ind] + filterEnvVal * filterEnvAmount[ind]
+                        );
+                filters[ind]->updateFilterFrequency(modFilterFreq);
             }
 
-            // ── 2. render WaveTable  ──────────────────────────────────────────
-            wtOscillators[ind]->render(samplesToRender);
-
-            auto wtAudioBuffers = wtOscillators[ind]->getAudioBuffers();
-            if (wtAudioBuffers == nullptr) break;
-
-            float* wtLeft  = wtAudioBuffers->getOutputBuffer(0);
-            float* wtRight = wtAudioBuffers->getOutputBuffer(1);
-            if (wtLeft == nullptr) break;
-
-            // ── 3. Filter-ADSR: average value for this sub-block ────────
-            // setCutoffFrequency ist expensive (tan, sqrt) → not per Sample!
-            // for an envelope, once every 64 samples is perfectly sufficient
-            float filterEnvVal = 0.0f;
-            for (uint32_t s = 0; s < samplesToRender; ++s)
-                filterEnvVal += filterAdsrs[ind].getNextSample(); // ADSR schreitet vor
-            filterEnvVal /= static_cast<float>(samplesToRender); // Mittelwert
-
-            const float modFilterFreq = juce::jlimit(
-                20.0f, 20000.0f,
-                filterFreq[ind] + filterEnvVal * filterEnvAmount[ind]
-            );
-            filters[ind]->updateFilterFrequency(modFilterFreq);
 
             // ── 4. Sample-Loop: Gain-ADSR, AM, Filter ────────────────────────
             for (uint32_t s = 0; s < samplesToRender; ++s)
@@ -208,8 +217,6 @@ void SynthVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
                 const float amMod = juce::jlimit(0.0f, 2.0f,
                     1.0f + amSignal * (amDepth[ind] / 100.0f));
 
-
-                // nn renderNextBlock:
                 // const float dbVal = velocityGain[ind];
                 // from -60 dB downwards, the signal becomes exactly 0.0f (true silence!).
                 const float oscGain = velocityGain[ind];//juce::Decibels::decibelsToGain(velocityGain[ind], -60.0f);
@@ -219,7 +226,8 @@ void SynthVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
                               * gainEnv * 0.25f * activeMult * amMod * oscGain;
 
                 // apply filter to each sample
-                if (wtActive[ind])
+                // ── apply filter if active ──
+                if (filterIsEnabled[ind] && filters[ind] != nullptr)
                 {
                     left  = filters[ind]->process(left, 0);
                     right = filters[ind]->process(right, 1);
@@ -284,7 +292,7 @@ void SynthVoice::setFilterType (int indexosc, int type)
     if (indexosc < 0 || indexosc >= 4)
         return;
 
-    const bool wantFormant = (type == 3); // 3 = "formant" in deiner StringArray
+    const bool wantFormant = (type == 3); // 3 = "formant"
     const bool isFormant   = dynamic_cast<FormantFilter*> (filters[indexosc].get()) != nullptr;
 
     if (wantFormant != isFormant)
@@ -375,6 +383,65 @@ void SynthVoice::updateFilterParams(const float filterFreqParam, const float fil
 void SynthVoice::setWtActive(const int index, const bool active)
 {
     wtActive[index]  = active;
+}
+
+void SynthVoice::setFilterEnabled(int index, bool active)
+{
+    std::array<bool, 4> currentActivationState;
+    currentActivationState[index] = active;
+    if (currentActivationState[index] != lastFiterIsEnabled[index])
+    {
+        filterIsEnabled[index]  = currentActivationState[index];
+        filters[index]->reset();
+    }
+    lastFiterIsEnabled[index] = currentActivationState[index];
+
+}
+
+void SynthVoice::prepare (double sampleRate, int maxBlockSize, int outputChannels)
+{
+    setCurrentPlaybackSampleRate (sampleRate);
+
+    // reset ADSR envelopes & SynthLab oscillators
+    for (int ind = 0; ind < 4; ++ind)
+    {
+        gainWtAdsrs[ind].setSampleRate (sampleRate);
+        juce::ADSR::Parameters wTparams { 0.001f, 0.9f, 0.05f, 0.2f };
+        gainWtAdsrs[ind].setParameters (wTparams);
+        gainWtAdsrs[ind].reset();
+
+        filterAdsrs[ind].setSampleRate (sampleRate);
+        juce::ADSR::Parameters filterParams { 0.01f, 0.8f, 0.5f, 1.0f };
+        filterAdsrs[ind].setParameters (filterParams);
+        filterAdsrs[ind].reset();
+
+        if (wtOscillators[ind] != nullptr)
+            wtOscillators[ind]->reset (sampleRate);
+    }
+
+    // preparing JUCE DSP filters for maxBlockSize
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate       = sampleRate;
+    spec.maximumBlockSize = static_cast<uint32_t> (maxBlockSize);
+    spec.numChannels      = static_cast<uint32_t> (outputChannels);
+    currentFilterSpec     = spec;
+
+    for (int ind = 0; ind < 4; ++ind)
+    {
+        if (filters[ind] == nullptr)
+            filters[ind] = std::make_unique<FilterData>();
+
+        filters[ind]->prepare (spec);
+    }
+
+    // allocate audio buffer with a fixed safety margin (no re-allocation)
+    mixBuffer.setSize (outputChannels, maxBlockSize, false, false, true);
+
+    for (int i = 0; i < 4; ++i) {
+        wtMeterBuffers[i].setSize (outputChannels, maxBlockSize, false, false, true);
+        wtMeterBuffers[i].clear();
+    }
+    isPrepared = true;
 }
 
 

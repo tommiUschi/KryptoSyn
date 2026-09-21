@@ -524,11 +524,11 @@
                           pos-width="46.8%" max-height="168" pos-height="100%" pos-x="0%"
                           pos-y="0%" min-height="123.2" flex-grow="1.0" flex-shrink="1.0"
                           border-color="00248755" display="contents">
-                      <Label pos-height="17%" margin="0.5" padding="0" border="0.5%" radius="5"
+                      <Label pos-height="10%" margin="0" padding="0" border="0.5%" radius="5"
                              border-color="00000000" text="filter adsr" justification="centred-top"
                              font-size="17.0" label-text="FFDCE7BF" background-color="00000000"
-                             pos-y="6%"/>
-                      <View height="" pos-height="55%" pos-y="22%" margin="0" padding="0"
+                             pos-y="3%"/>
+                      <View height="" pos-height="55%" pos-y="13%" margin="0" padding="0"
                             border="0" radius="0" display="contents" id="marker2" background-color="00214435">
                         <Slider pos-x="1%" pos-y="0%" pos-width="47.3%" pos-height="47%" slider-textbox="no-textbox"
                                 slider-background="0000FF46" slider-thumb="FF00FFB3" slider-track="FF00FFB3"
@@ -552,6 +552,26 @@
                                 max-height="37" caption-color="FF00FF86" caption-size="24" caption="R"
                                 caption-placement="centred-left" margin="0" padding="0" radius="0"
                                 background-color="00174E31" parameter="RELEASEFLT1"/>
+                      </View>
+                      <View pos-height="34%" pos-y="66%" margin="0" padding="0" flex-direction="row"
+                            border="0" radius="0" display="contents" background-color="00214435">
+                        <View margin="0" padding="0" border="0" radius="5" background-color="00000000"
+                              pos-width="74%" pos-height="100%" pos-y="0%" pos-x="0%" id="spectMarker"
+                              display="contents" border-color="0F000000">
+                            <ToggleButton id="wt0filterToggle" property="wt0FilterActivated" pos-height="74%" pos-width="38%"
+                                          pos-x="9%" pos-y="8%" lookAndFeel="CustomLNFButton" margin="3"
+                                          padding="1" border="0.6" radius="5" border-color="FF19C700" background-color="00000000"
+                                          text="On / Off"/>
+                          <View pos-height="72%" pos-width="24%" pos-x="66%" pos-y="9%" margin="2"
+                                padding="1" border="0" radius="5" background-color="FF000000"
+                                display="contents">
+                            <ToggleButton id="wt0filter-Led" property="wt0FilterActivated" lookAndFeel="CustomLedLNF"
+                                          margin="0" padding="0" border="0" radius="0" min-width="19.6"
+                                          min-height="18.2" max-width="28" max-height="26" flex-align-self="stretch"
+                                          text="" background-color="FF000000" pos-height="71%" pos-width="50%"
+                                          pos-x="24.6%" pos-y="13%" flex-grow="1.0" flex-shrink="1.0"/>
+                          </View>
+                        </View>
                       </View>
                     </View>
                     <View pos-width="52.7%" max-width="360" display="contents" pos-height="96%"
@@ -871,11 +891,11 @@
                           pos-width="46.8%" max-height="176" pos-height="100%" pos-x="0%"
                           pos-y="0%" min-height="123.2" flex-grow="1.0" flex-shrink="1.0"
                           border-color="00248755" display="contents">
-                      <Label pos-height="17%" margin="0.5" padding="0" border="0.5%" radius="5"
+                      <Label pos-height="10%" margin="0" padding="0" border="0.5%" radius="5"
                              border-color="00000000" text="filter adsr" justification="centred-top"
                              font-size="17.0" label-text="FFDCE7BF" background-color="00000000"
-                             pos-y="6%"/>
-                      <View height="" pos-height="66.6%" pos-y="26.3%" margin="0" padding="0"
+                             pos-y="3%"/>
+                      <View height="" pos-height="55%" pos-y="13%" margin="0" padding="0"
                             border="0" radius="0" display="contents" id="marker2" background-color="00214435">
                         <Slider pos-x="1%" pos-y="0%" pos-width="47.3%" pos-height="47%" slider-textbox="no-textbox"
                                 slider-background="0000FF46" slider-thumb="FF00FFB3" slider-track="FF00FFB3"
@@ -899,6 +919,26 @@
                                 max-height="37" caption-color="FF00FF86" caption-size="24" caption="R"
                                 caption-placement="centred-left" margin="0" padding="0" radius="0"
                                 background-color="00174E31" parameter="RELEASEFLT2"/>
+                      </View>
+                      <View pos-height="34%" pos-y="66%" margin="0" padding="0" flex-direction="row"
+                            border="0" radius="0" display="contents" background-color="00214435">
+                        <View margin="0" padding="0" border="0" radius="5" background-color="00000000"
+                              pos-width="74%" pos-height="100%" pos-y="0%" pos-x="0%" id="spectMarker"
+                              display="contents" border-color="0F000000">
+                          <ToggleButton id="wt2filterToggle" property="wt2FilterActivated" pos-height="74%" pos-width="38%"
+                                        pos-x="9%" pos-y="8%" lookAndFeel="CustomLNFButton" margin="3"
+                                        padding="1" border="0.6" radius="5" border-color="FF19C700" background-color="00000000"
+                                        text="On / Off"/>
+                          <View pos-height="72%" pos-width="24%" pos-x="66%" pos-y="9%" margin="2"
+                                padding="1" border="0" radius="5" background-color="FF000000"
+                                display="contents">
+                            <ToggleButton id="wt2-Led" property="wt2FilterActivated" lookAndFeel="CustomLedLNF"
+                                          margin="0" padding="0" border="0" radius="0" min-width="19.6"
+                                          min-height="18.2" max-width="28" max-height="26" flex-align-self="stretch"
+                                          text="" background-color="FF000000" pos-height="71%" pos-width="50%"
+                                          pos-x="24.6%" pos-y="13%" flex-grow="1.0" flex-shrink="1.0"/>
+                          </View>
+                        </View>
                       </View>
                     </View>
                     <View pos-width="52.7%" max-width="360" display="contents" pos-height="96%"
@@ -1218,11 +1258,11 @@
                           pos-width="46.8%" max-height="176" pos-height="100%" pos-x="0%"
                           pos-y="0%" min-height="123.2" flex-grow="1.0" flex-shrink="1.0"
                           border-color="00248755" display="contents">
-                      <Label pos-height="17%" margin="0.5" padding="0" border="0.5%" radius="5"
+                      <Label pos-height="10%" margin="0" padding="0" border="0.5%" radius="5"
                              border-color="00000000" text="filter adsr" justification="centred-top"
                              font-size="17.0" label-text="FFDCE7BF" background-color="00000000"
-                             pos-y="6%"/>
-                      <View height="" pos-height="66.6%" pos-y="26.3%" margin="0" padding="0"
+                             pos-y="3%"/>
+                      <View height="" pos-height="55%" pos-y="13%" margin="0" padding="0"
                             border="0" radius="0" display="contents" id="marker2" background-color="00214435">
                         <Slider pos-x="1%" pos-y="0%" pos-width="47.3%" pos-height="47%" slider-textbox="no-textbox"
                                 slider-background="0000FF46" slider-thumb="FF00FFB3" slider-track="FF00FFB3"
@@ -1246,6 +1286,26 @@
                                 max-height="37" caption-color="FF00FF86" caption-size="24" caption="R"
                                 caption-placement="centred-left" margin="0" padding="0" radius="0"
                                 background-color="00174E31" parameter="RELEASEFLT3"/>
+                      </View>
+                      <View pos-height="34%" pos-y="66%" margin="0" padding="0" flex-direction="row"
+                            border="0" radius="0" display="contents" background-color="00214435">
+                        <View margin="0" padding="0" border="0" radius="5" background-color="00000000"
+                              pos-width="74%" pos-height="100%" pos-y="0%" pos-x="0%" id="spectMarker"
+                              display="contents" border-color="0F000000">
+                          <ToggleButton id="wt1filterToggle" property="wt1FilterActivated" pos-height="74%" pos-width="38%"
+                                        pos-x="9%" pos-y="8%" lookAndFeel="CustomLNFButton" margin="3"
+                                        padding="1" border="0.6" radius="5" border-color="FF19C700" background-color="00000000"
+                                        text="On / Off"/>
+                          <View pos-height="72%" pos-width="24%" pos-x="66%" pos-y="9%" margin="2"
+                                padding="1" border="0" radius="5" background-color="FF000000"
+                                display="contents">
+                            <ToggleButton id="wt1filter-Led" property="wt1FilterActivated" lookAndFeel="CustomLedLNF"
+                                          margin="0" padding="0" border="0" radius="0" min-width="19.6"
+                                          min-height="18.2" max-width="28" max-height="26" flex-align-self="stretch"
+                                          text="" background-color="FF000000" pos-height="71%" pos-width="50%"
+                                          pos-x="24.6%" pos-y="13%" flex-grow="1.0" flex-shrink="1.0"/>
+                          </View>
+                        </View>
                       </View>
                     </View>
                     <View pos-width="52.7%" max-width="360" display="contents" pos-height="96%"
@@ -1564,11 +1624,11 @@
                           pos-width="46.8%" max-height="176" pos-height="100%" pos-x="0%"
                           pos-y="0%" min-height="123.2" flex-grow="1.0" flex-shrink="1.0"
                           border-color="00248755" display="contents">
-                      <Label pos-height="17%" margin="0.5" padding="0" border="0.5%" radius="5"
+                      <Label pos-height="10%" margin="0" padding="0" border="0.5%" radius="5"
                              border-color="00000000" text="filter adsr" justification="centred-top"
                              font-size="17.0" label-text="FFDCE7BF" background-color="00000000"
-                             pos-y="6%"/>
-                      <View height="" pos-height="66.6%" pos-y="26.3%" margin="0" padding="0"
+                             pos-y="3%"/>
+                      <View height="" pos-height="55%" pos-y="13%" margin="0" padding="0"
                             border="0" radius="0" display="contents" id="marker2" background-color="00214435">
                         <Slider pos-x="1%" pos-y="0%" pos-width="47.3%" pos-height="47%" slider-textbox="no-textbox"
                                 slider-background="0000FF46" slider-thumb="FF00FFB3" slider-track="FF00FFB3"
@@ -1592,6 +1652,26 @@
                                 max-height="37" caption-color="FF00FF86" caption-size="24" caption="R"
                                 caption-placement="centred-left" margin="0" padding="0" radius="0"
                                 background-color="00174E31" parameter="RELEASEFLT4"/>
+                      </View>
+                      <View pos-height="34%" pos-y="66%" margin="0" padding="0" flex-direction="row"
+                            border="0" radius="0" display="contents" background-color="00214435">
+                        <View margin="0" padding="0" border="0" radius="5" background-color="00000000"
+                              pos-width="74%" pos-height="100%" pos-y="0%" pos-x="0%" id="spectMarker"
+                              display="contents" border-color="0F000000">
+                          <ToggleButton id="wt3filterToggle" property="wt3FilterActivated" pos-height="74%" pos-width="38%"
+                                        pos-x="9%" pos-y="8%" lookAndFeel="CustomLNFButton" margin="3"
+                                        padding="1" border="0.6" radius="5" border-color="FF19C700" background-color="00000000"
+                                        text="On / Off"/>
+                          <View pos-height="72%" pos-width="24%" pos-x="66%" pos-y="9%" margin="2"
+                                padding="1" border="0" radius="5" background-color="FF000000"
+                                display="contents">
+                            <ToggleButton id="wt3filter-Led" property="wt3FilterActivated" lookAndFeel="CustomLedLNF"
+                                          margin="0" padding="0" border="0" radius="0" min-width="19.6"
+                                          min-height="18.2" max-width="28" max-height="26" flex-align-self="stretch"
+                                          text="" background-color="FF000000" pos-height="71%" pos-width="50%"
+                                          pos-x="24.6%" pos-y="13%" flex-grow="1.0" flex-shrink="1.0"/>
+                          </View>
+                        </View>
                       </View>
                     </View>
                     <View pos-width="52.7%" max-width="360" display="contents" pos-height="96%"
@@ -2284,16 +2364,47 @@
                 </View>
               </View>
                 <View margin="0" padding="0" border="1" radius="5" background-color="0F000000"
-                      pos-width="28%" pos-height="14%" pos-y="75%" pos-x="0%" id="spectMarker"
+                      pos-width="22%" pos-height="14%" pos-y="75%" pos-x="0%" id="spectMarker"
                       display="contents" border-color="0F000000">
-                  <ToggleButton id="sampleToggle" property="sampleActivated" pos-height="57%" pos-width="38%"
-                                pos-x="11%" pos-y="20%" lookAndFeel="CustomLNFButton" margin="3"
+                  <View display="contents" background-color="0F000000" pos-height="100%"
+                        flex-direction="column" margin="1" padding="1" border="0" radius="5">
+                    <Label pos-width="70%" pos-x="8%" pos-y="1%" pos-height="44%" margin="1"
+                           padding="1" border="0" radius="5" background-color="00000000"
+                           label-text="FFF9F3E4" font-size="16" justification="top-left"
+                           text="modul:" border-color="FF038A95"/>
+                    <ToggleButton id="sampleToggle" property="sampleActivated" pos-height="54%" pos-width="38%"
+                                pos-x="9%" pos-y="36%" lookAndFeel="CustomLNFButton" margin="3"
                                 padding="1" border="0.6" radius="5" border-color="FF19C700" background-color="00000000"
                                 text="On / Off"/>
-                  <View pos-height="50%" pos-width="26%" pos-x="63%" pos-y="24%" margin="2"
+                  </View>
+                  <View pos-height="52%" pos-width="28%" pos-x="63%" pos-y="36%" margin="2"
                         padding="1" border="0" radius="5" background-color="FF000000"
                         display="contents">
                     <ToggleButton id="sample0-Led" property="sampleActivated" lookAndFeel="CustomLedLNF"
+                                  margin="0" padding="0" border="0" radius="0" min-width="19.6"
+                                  min-height="18.2" max-width="28" max-height="26" flex-align-self="stretch"
+                                  text="" background-color="FF000000" pos-height="70%" pos-width="50%"
+                                  pos-x="24.6%" pos-y="13%" flex-grow="1.0" flex-shrink="1.0"/>
+                  </View>
+                </View>
+                <View margin="0" padding="0" border="1" radius="5" background-color="0F000000"
+                      pos-width="22%" pos-height="14%" pos-y="75%" pos-x="27.7%" id="spectMarker"
+                      display="contents" border-color="0F000000">
+                  <View display="contents" background-color="0F000000" pos-height="100%"
+                        flex-direction="column" margin="1" padding="1" border="0" radius="5">
+                    <Label pos-width="70%" pos-x="8%" pos-y="1%" pos-height="44%" margin="1"
+                           padding="1" border="0" radius="5" background-color="00000000"
+                           label-text="FFF9F3E4" font-size="16" justification="top-left"
+                           text="filter:" border-color="FF038A95"/>
+                    <ToggleButton id="sampleFilterToggle" property="sampleFilterActivated" pos-height="54%" pos-width="38%"
+                                  pos-x="9%" pos-y="36%" lookAndFeel="CustomLNFButton" margin="3"
+                                  padding="1" border="0.6" radius="5" border-color="FF19C700" background-color="00000000"
+                                  text="On / Off"/>
+                  </View>
+                  <View pos-height="52%" pos-width="28%" pos-x="63%" pos-y="36%" margin="2"
+                        padding="1" border="0" radius="5" background-color="FF000000"
+                        display="contents">
+                    <ToggleButton id="sample0Filter-Led" property="sampleFilterActivated" lookAndFeel="CustomLedLNF"
                                   margin="0" padding="0" border="0" radius="0" min-width="19.6"
                                   min-height="18.2" max-width="28" max-height="26" flex-align-self="stretch"
                                   text="" background-color="FF000000" pos-height="70%" pos-width="50%"
@@ -2815,54 +2926,75 @@
                 pos-y="5%" pos-width="99.8%" pos-height="99.8%" width="" height=""
                 min-width="610.4" min-height="400" max-width="872" max-height="571"
                 display="contents" flex-direction="column" caption-size="0">
-            <View display="contents" pos-height="51%" pos-width="100%" background-color="FF182C29"
+            <View display="contents" pos-height="51%" pos-width="100%" background-color="FF19292C"
                   margin="0.5" padding="0.5" border="0.8" radius="5" border-color="FF172927"
                   id="" caption-size="0" caption="Master">
               <View flex-direction="column" pos-width="38%" margin="1.5" padding="0.2"
                     border="1" radius="5" pos-height="100%" pos-x="0%" pos-y="0%"
                     display="contents" id="" background-color="FF182927" border-color="FF005758">
-                <View margin="1.5" padding="0" border="0.6" radius="4" border-color="FF4BB53C"
-                      background-color="FF0B0E0C" min-height="147" max-height="190"
-                      min-width="233.8" max-width="334" background-image="adsrGitter_png"
-                      flex-align-self="stretch" pos-x="0.6%" pos-y="0.2%" pos-height="74%"
-                      pos-width="98.4%" flex-grow="1.0" flex-shrink="1.0" display="contents"
-                      id="" image-placement="stretch">
-                  <Plot max-width="332" max-height="188" flex-grow="1.0" flex-shrink="1.0"
-                        pos-height="92%" pos-width="99.4%" pos-x="0.8%" pos-y="8%"
-                        min-height="144.2" min-width="225.4" source="gain-MainAdsr" plot-color="9BFF00B9"
-                        plot-fill-color="34252AFF" padding="2" glowType="glowTypeNone"/>
-                </View>
-                <View margin="1" padding="0" border="0" radius="0" max-height="75"
-                      max-width="334" pos-height="28%" pos-y="74%" pos-x="1%" pos-width="100%"
-                      min-height="52.5" min-width="233.8" display="contents" background-color="00000000">
-                  <Slider slider-textbox="no-textbox" max-height="37" pos-height="48%"
-                          margin="0" padding="0" radius="0" id="sld_at" max-width="158"
-                          pos-width="47.3%" pos-x="1%" pos-y="0%" caption-placement="centred-left"
-                          caption-color="FFDEFFC0" caption="A" caption-size="24" slider-background="0000FF46"
-                          slider-track="A600FFB3" slider-thumb="FF00B47E" slider-type="linear-horizontal"
-                          slider-text-background="00000000" background-color="00000000"
-                          parameter="ATTACK_MAIN _"/>
-                  <Slider slider-textbox="no-textbox" max-height="37" pos-height="48%"
-                          margin="0" padding="0" radius="0" id="sld_dec" max-width="158"
-                          pos-width="47.3%" pos-x="49.5%" pos-y="0%" caption-placement="centred-left"
-                          caption-color="FFDEFFC0" caption="D" caption-size="24" slider-background="0000FF46"
-                          slider-track="A600FFB3" slider-thumb="FF00B47E" slider-type="linear-horizontal"
-                          slider-text-background="00000000" background-color="00000000"
-                          parameter="DECAY_MAIN_"/>
-                  <Slider slider-textbox="no-textbox" max-height="37" pos-height="48%"
-                          margin="0" padding="0" radius="0" id="sld_sus" max-width="158"
-                          pos-width="47.3%" pos-x="1%" pos-y="49%" caption-placement="centred-left"
-                          caption-color="FFDEFFC0" caption="S" caption-size="24" slider-background="0000FF46"
-                          slider-track="A600FFB3" slider-thumb="FF00B47E" slider-type="linear-horizontal"
-                          slider-text-background="00000000" background-color="00000000"
-                          parameter="SUSTAIN_MAIN_"/>
-                  <Slider slider-textbox="no-textbox" max-height="37" pos-height="48%"
-                          margin="0" padding="0" radius="0" id="sld_rel" max-width="158"
-                          pos-width="47.3%" pos-x="49.5%" pos-y="49%" caption-placement="centred-left"
-                          caption-color="FFDEFFC0" caption="R" caption-size="24" slider-background="0000FF46"
-                          slider-track="A600FFB3" slider-thumb="FF00B47E" slider-type="linear-horizontal"
-                          slider-text-background="00000000" background-color="00000000"
-                          parameter="RELEASE_MAIN_"/>
+                  <View margin="1.5" padding="0" border="0.6" radius="4" border-color="FF22473c"
+                      background-color="FF182927" min-height="161" max-height="230"
+                      min-width="233.8" max-width="334" flex-direction="row"
+                      flex-align-self="stretch" pos-x="2%" pos-y="1.5%" pos-height="48%"
+                      pos-width="96%" flex-grow="1.0" flex-shrink="1.0" display="contents">
+                    <Label margin="1" padding="1" border="0.5" radius="5" border-color="00000000"
+                           pos-height="28%" pos-x="1%" pos-y="1%" background-color="00000000" text="freq modulation"
+                           font-size="14" label-text="FF95fff2" justification="top-left"/>
+                    <Slider slider-type="rotary" slider-text-background="FF010E03" background-color="FF244136"
+                            margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
+                            min-height="53.3" min-width="65.8" pos-y="23%" pos-x="1%" pos-width="31%"
+                            pos-height="68%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
+                            slider-text-outline="8A676EFF" slider-text="FF00ff13" caption-color="FFF2F7CF"
+                            caption-size="18" border-color="11000000" border="1" caption="freq" parameter="LFOFMFREQ_MASTER"/>
+                    <Slider slider-type="rotary" slider-text-background="FF010E03" background-color="FF244136"
+                            margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
+                            min-height="53.3" min-width="65.8" pos-y="23%" pos-x="32.5%" pos-width="31%"
+                            pos-height="68%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
+                            slider-text-outline="8A676EFF" slider-text="FF00ff13" caption-color="FFF2F7CF"
+                            caption-size="18" border-color="11000000" border="1" caption="depth" parameter="FMDEPTH_MASTER"/>
+                    <View pos-width="35%" pos-x="64%" pos-height="50.5%" margin="2" padding="1"
+                          border="1" radius="5" border-color="11000000" background-color="FF244136"
+                          display="contents" flex-direction="column" pos-y="23%">
+                      <Label margin="1" padding="1" border="0.5" radius="5" border-color="00000000"
+                             pos-height="30%" background-color="00000000" text="fm modul."
+                             font-size="14.4" label-text="FFDCE2AD" justification="centred-bottom"/>
+                      <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
+                                margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
+                                combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
+                                lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_MASTER"/>
+                    </View>
+                  </View>
+                  <View margin="1.5" padding="0" border="0.6" radius="4" border-color="FF22473c"
+                        background-color="FF182927" min-height="161" max-height="230"
+                        min-width="233.8" max-width="334" flex-direction="row"
+                        flex-align-self="stretch" pos-x="2%" pos-y="50.5%" pos-height="48%"
+                        pos-width="96%" flex-grow="1.0" flex-shrink="1.0" display="contents">
+                    <Label margin="1" padding="1" border="0.5" radius="5" border-color="00000000"
+                           pos-height="28%" pos-x="1%" pos-y="1%" background-color="00000000" text="amplitude modulation"
+                           font-size="14" label-text="FF95fff2" justification="top-left"/>
+                    <Slider slider-type="rotary" slider-text-background="FF010E03" background-color="FF244136"
+                            margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
+                            min-height="53.3" min-width="65.8" pos-y="23%" pos-x="1%" pos-width="31%"
+                            pos-height="68%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
+                            slider-text-outline="8A676EFF" slider-text="FF00ff13" caption-color="FFF2F7CF"
+                            caption-size="18" border-color="11000000" border="1" caption="freq" parameter="LFOAMFREQ_MASTER"/>
+                    <Slider slider-type="rotary" slider-text-background="FF010E03" background-color="FF244136"
+                            margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
+                            min-height="53.3" min-width="65.8" pos-y="23%" pos-x="32.5%" pos-width="31%"
+                            pos-height="68%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
+                            slider-text-outline="8A676EFF" slider-text="FF00ff13" caption-color="FFF2F7CF"
+                            caption-size="18" border-color="11000000" border="1" caption="depth" parameter="AMDEPTH_MASTER"/>
+                    <View pos-width="35%" pos-x="64%" pos-height="50.5%" margin="2" padding="1"
+                          border="1" radius="5" border-color="11000000" background-color="FF244136"
+                          display="contents" flex-direction="column" pos-y="23%">
+                      <Label margin="1" padding="1" border="0.5" radius="5" border-color="00000000"
+                             pos-height="30%" background-color="00000000" text="am modul."
+                             font-size="14.4" label-text="FFDCE2AD" justification="centred-bottom"/>
+                      <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
+                                margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
+                                combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
+                                lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_MASTER"/>
+                    </View>
                 </View>
               </View>
               <View pos-height="97%" pos-width="12%" pos-y="1.5%" pos-x="38.8%" margin="2"

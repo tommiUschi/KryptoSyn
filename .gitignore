@@ -10,7 +10,13 @@ cmake_install.cmake
 
 # SynthLab: must be obtained by the user, not part of the repository
 SDKs/SynthLab/
-SynthLabSamples/
+
+# 1. Ignore all contents in the SynthLabSamples folder
+SynthLabSamples/*
+
+# 2. Exception: Explicitly KEEP the Clavecin-master folder
+!SynthLabSamples/Clavecin-master/
+
 
 # foleys_gui_magic: deliberately DO NOT ignore, as it is vendored and part of the repository
 # modules/foleys_gui_magic/  <- deliberately not entered

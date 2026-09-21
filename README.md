@@ -4,12 +4,33 @@ KryptoSyn is among other things a wavetable-based software synthesizer, availabl
 VST3/Standalone plugin, built with `JUCE` and the `SynthLab engine`, and `foleys_gui_magic`.
 
 [KryptoSyn Screenshot1](docs/page1.png)
+
 [KryptoSyn Screenshot2](docs/page2.png)
+
 [KryptoSyn Screenshot3](docs/page3.png)
+
 [KryptoSyn Screenshot4](docs/page4.png)
+
 [KryptoSyn Screenshot5](docs/page5.png)
+
 [KryptoSyn Screenshot6](docs/page6.png)
+
 [KryptoSyn Screenshot7](docs/page7.png)
+
+## Sampler
+
+As an example, I have included a sample folder licensed under 'Creative Commons Sampling+ 1.0' 
+—located at 'SynthLabSamples'—which has NOTHING to do with the SynthLab samples.
+
+Within the main sample folder 'SynthLabSamples', the 'SynthLab structure' works,
+as does the 'sfz structure' of the 'CC Sampling+ 1.0' packs.
+
+The 'CC Sampling+ 1.0' license sometimes involves specific structures,
+such as those found in the 'G-Town Church Sampling Projects' package.
+
+Regarding this, please note the following:
+
+[KryptoSyn Screenshot7](docs/sampleTut.png)
 
 ## Features
 

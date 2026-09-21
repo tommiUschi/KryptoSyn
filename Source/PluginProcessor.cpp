@@ -18,6 +18,7 @@
 
 const juce::Identifier ADSRPlot::typeId { "ADSRPlot" };
 struct SpectroParams;
+struct SamplerZone;
 
 #pragma region GLOBAL_STRUCTS
 struct PropertyLambdaListener : public juce::Value::Listener {
@@ -56,6 +57,21 @@ struct PropertySamplerListener : public juce::Value::Listener {
         valueToListen.addListener (this);
     }
     ~PropertySamplerListener() override {
+        valueToListen.removeListener (this);
+    }
+    void valueChanged (juce::Value& v) override {
+        if (onChanchedCallback)
+            onChanchedCallback (static_cast<bool>(v.getValue()));
+    }
+    juce::Value valueToListen;
+    std::function<void(bool)> onChanchedCallback;
+};
+struct PropertySamplerFilterListener : public juce::Value::Listener {
+    PropertySamplerFilterListener (juce::Value v, std::function<void(bool)> callback)
+        : valueToListen (v), onChanchedCallback (std::move(callback)) {
+        valueToListen.addListener (this);
+    }
+    ~PropertySamplerFilterListener() override {
         valueToListen.removeListener (this);
     }
     void valueChanged (juce::Value& v) override {
@@ -109,7 +125,7 @@ struct PropertyTutorialListener : public juce::Value::Listener {
         valueToListen.removeListener (this);
     }
     void valueChanged (juce::Value& v) override {
-        // Only fire if the button has been pressed (value becomes true)
+        // only fire if the button has been pressed (value becomes true)
         if (static_cast<bool>(v.getValue()))
         {
             if (onClickCallback)
@@ -245,7 +261,91 @@ struct PropertyKeybBigSmallListener : public juce::Value::Listener {
     juce::Value valueToListen;
     std::function<void(bool)> onChanchedCallback;
 };
+struct PropertySynthFilterActiveListener : public juce::Value::Listener {
+    PropertySynthFilterActiveListener (juce::Value v, std::function<void(bool)> callback)
+        : valueToListen (v), onChanchedCallback (std::move(callback)) {
+        valueToListen.addListener (this);
+    }
+    ~PropertySynthFilterActiveListener() override {
+        valueToListen.removeListener (this);
+    }
+    void valueChanged (juce::Value& v) override {
+        if (onChanchedCallback)
+            onChanchedCallback (static_cast<bool>(v.getValue()));
+    }
+    juce::Value valueToListen;
+    std::function<void(bool)> onChanchedCallback;
+};
 #pragma endregion GLOBAL_STRUCTS
+
+#pragma region SAMPLER_FINDINGS_HELPER
+// locates the main SFZ library folder (searches for 'samples' or 'include' folders)
+static juce::File findLibraryRoot (const juce::File& sfzFile)
+{
+    juce::File current = sfzFile.getParentDirectory();
+
+    for (int depth = 0; depth < 4 && current.exists() && current != current.getParentDirectory(); ++depth)
+    {
+        for (const auto& entry : juce::RangedDirectoryIterator (current, false, "*", juce::File::findDirectories))
+        {
+            auto name = entry.getFile().getFileName();
+            if (name.equalsIgnoreCase ("samples") || name.equalsIgnoreCase ("include"))
+            {
+                return current; // Root-Ordner gefunden!
+            }
+        }
+        current = current.getParentDirectory();
+    }
+
+    return sfzFile.getParentDirectory(); // Fallback
+}
+
+// case-insensitive path resolver with underscore/space tolerance
+static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
+{
+    juce::String cleanPath = relativePath.replaceCharacter ('\\', '/').trim();
+    if (cleanPath.isEmpty()) return {};
+
+    juce::File direct = root.getChildFile (cleanPath);
+    if (direct.exists())
+        return direct;
+
+    auto normalizeStr = [] (juce::String s) {
+        return s.toLowerCase().replaceCharacter ('_', ' ').trim();
+    };
+
+    juce::StringArray components;
+    components.addTokens (cleanPath, "/", "");
+
+    juce::File current = root;
+    for (const auto& comp : components)
+    {
+        if (comp.isEmpty() || comp == ".") continue;
+        if (comp == "..") { current = current.getParentDirectory(); continue; }
+
+        juce::File exactChild = current.getChildFile (comp);
+        if (exactChild.exists())
+        {
+            current = exactChild;
+        }
+        else
+        {
+            bool found = false;
+            for (const auto& entry : juce::RangedDirectoryIterator (current, false, "*", juce::File::findFilesAndDirectories))
+            {
+                if (normalizeStr (entry.getFile().getFileName()) == normalizeStr (comp))
+                {
+                    current = entry.getFile();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return {};
+        }
+    }
+    return current.exists() ? current : juce::File();
+}
+#pragma endregion SAMPLER_FINDINGS_HELPER
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
@@ -263,43 +363,16 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     // ACTIVATION AUTO-SAVE:
     // tells PGM where the source code files are located.
     FOLEYS_SET_SOURCE_PATH(__FILE__);
+    // standalone or vst3 - replacement preprocessor for building
     currentPreProcessorReplacement = PreProcessorReplacement::Standalone;
-#pragma region BinaryData
-    // Initialization of the GUI state from an XML file in BinaryData
-    magicState.setGuiValueTree (BinaryData::adsrGitter_png, BinaryData::adsrGitter_pngSize);
-    magicState.setGuiValueTree(BinaryData::mySlider_svg, BinaryData::mySlider_svgSize);
-    magicState.setGuiValueTree(BinaryData::greenLED_png, BinaryData::greenLED_pngSize);
-    magicState.setGuiValueTree(BinaryData::blueLED_new_png, BinaryData::blueLED_new_pngSize);
-    magicState.setGuiValueTree (BinaryData::strip_slider_128_bgr_png, BinaryData::strip_slider_128_bgr_pngSize);
-    magicState.setGuiValueTree (BinaryData::strip_slider_128_org_png, BinaryData::strip_slider_128_org_pngSize);
-    magicState.setGuiValueTree (BinaryData::strip_slider_128_ggr_png, BinaryData::strip_slider_128_ggr_pngSize);
-    magicState.setGuiValueTree (BinaryData::strip_slider_128_bgr_small_png, BinaryData::strip_slider_128_bgr_small_pngSize);
-    magicState.setGuiValueTree (BinaryData::strip_slider_128_ggr_small_png, BinaryData::strip_slider_128_ggr_small_pngSize);
-    magicState.setGuiValueTree (BinaryData::strip_slider_128_org_small_png, BinaryData::strip_slider_128_org_small_pngSize);
-    magicState.setGuiValueTree (BinaryData::Synth_Name_png, BinaryData::Synth_Name_pngSize);
-    magicState.setGuiValueTree (BinaryData::decibel_png, BinaryData::decibel_pngSize);
-    magicState.setGuiValueTree (BinaryData::meterBg_png, BinaryData::meterBg_pngSize);
-    magicState.setGuiValueTree (BinaryData::modDiagramm_png, BinaryData::modDiagramm_pngSize);
-    magicState.setGuiValueTree (BinaryData::ChorusTxt_png, BinaryData::ChorusTxt_pngSize);
-    magicState.setGuiValueTree (BinaryData::FlangerTxt_png, BinaryData::FlangerTxt_pngSize);
-    magicState.setGuiValueTree (BinaryData::DelayTxt_png, BinaryData::DelayTxt_pngSize);
-    magicState.setGuiValueTree (BinaryData::Pfeil_png, BinaryData::Pfeil_pngSize);
-    magicState.setGuiValueTree (BinaryData::ReverbTxt_png, BinaryData::ReverbTxt_pngSize);
-    magicState.setGuiValueTree (BinaryData::Instructions_png, BinaryData::Instructions_pngSize);
-    magicState.setGuiValueTree (BinaryData::meterColorMask_png, BinaryData::meterColorMask_pngSize);
-    magicState.setGuiValueTree (BinaryData::meterColorMaskSpec_png, BinaryData::meterColorMaskSpec_pngSize);
-    magicState.setGuiValueTree (BinaryData::SpectroSld_png, BinaryData::SpectroSld_pngSize);
-#pragma endregion BinaryData
 
     wavetableDatabase = std::make_shared<SynthLab::WavetableDatabase>();
     midiInputData = std::make_shared<SynthLab::MidiInputData>();
-    // Initialize once with a truly random seed:
-    randomGenerator.setSeedRandomly();
-    randomGeneratorOscShape.setSeedRandomly();
+
     // for rev. spectrogram synth.:
     audioGridData.assign (static_cast<size_t> (numColumns * numRows), 0.0f);
     analyser = magicState.createAndAddObject<foleys::MagicAnalyser>("analyser");
-    // Initialize the Synthesizers
+    // initialize the Synthesizers
     synth.addSound(new SynthSound());
     myVoices.clear();
     synth.clearVoices();
@@ -537,10 +610,12 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     InitializeWTOscTriggers();
     InitializeGainFilterTriggers();
     InitializeSamplerActiveTriggers();
+    InitializeSamplerFilterActiveTriggers();
     InitializeModActiveTriggers();
     InitializeEffectsTriggers();
     InitializeAnalysTrigger();
     InitializeKeybBigSmallTriggers();
+    InitializeSynthFilterActiveTriggers();
     *bothAnalysersActiveParam = false;
     // =====================================/
 #ifdef _DEBUG
@@ -557,9 +632,6 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     // create the folder and explicitly ignore the result due to the warning.
     auto result = presetDirectory.createDirectory();
     juce::ignoreUnused (result);
-    // prepare the text label for the middle
-    currentPresetNameValue = magicState.getPropertyAsValue ("currentPresetText");
-    currentPresetNameValue.setValue ("Random Sound");
     // initialize preset bar and sprctro on/off
     InitializeTutWindowTriggers();
     InitializeLicenseWindowTriggers();
@@ -574,9 +646,12 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 }
 
 
-AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
-= default;
 
+AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
+{
+    if (sampleLoadingThread.joinable())
+        sampleLoadingThread.join();
+}
 
 //==============================================================================
 #pragma region OVERRIDE_METHODS
@@ -617,6 +692,7 @@ void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData
 
 void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
+
     if (auto xmlState = getXmlFromBinary (data, sizeInBytes))
     {
         auto presetRoot = juce::ValueTree::fromXml (*xmlState);
@@ -632,6 +708,8 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
             loadEffectParam (presetRoot); // now fully integrated
         }
     }
+    currentPresetNameValue = magicState.getPropertyAsValue ("currentPresetText");
+    loadMostRecentPreset();
 }
 
 const juce::String AudioPluginAudioProcessor::getName() const
@@ -707,15 +785,20 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
         arrDelayBuffer[channel].Initialize(sampleRate, 2000.0f);
         arrDelayBuffer[channel].Clear();
     }
-    mainGainAdsr.setSampleRate(sampleRate);
-    juce::ADSR::Parameters mainAdsrParams;
-    mainAdsrParams.attack = 0.05f;
-    mainAdsrParams.decay = 0.9f;
-    mainAdsrParams.sustain = 0.1f;
-    mainAdsrParams.release = 0.05f;
-    mainGainAdsr.setParameters (mainAdsrParams);
-    mainGainAdsr.reset();
+    const int numChannels = juce::jmax (1, getTotalNumOutputChannels());
+    const int maxBlockSize = juce::jmax (samplesPerBlock, 4096);
+    // size the scratch buffer to the maximum block size
+    samplerScratchBuffer.setSize (numChannels, maxBlockSize, false, false, true);
+    specScratchBuffer.setSize (numChannels, maxBlockSize, false, false, true);
+    zeroBuffer.setSize (numChannels, maxBlockSize, false, false, true);
+    zeroBuffer.clear();
 
+    // pre-allocate 4 wavetable meter buffers
+    for (auto& buf : wtMeterSum)
+    {
+        buf.setSize (numChannels, maxBlockSize, false, false, true);
+        buf.clear();
+    }
 
     // Meter setup: channels, sampling rate, peak hold time in ms (e.g., 500 ms)
     if (outputWtMeterOscA!= nullptr)
@@ -742,7 +825,7 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
     // prepare each voice individually so that 'isPrepared = true'
     for (int indx = 0; indx < synth.getNumVoices(); ++indx) {
         if (auto* v = dynamic_cast<SynthVoice*>(synth.getVoice(indx))) {
-            v->prepareToPlay(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
+            v->prepare (sampleRate, maxBlockSize, numChannels);
         }
     }
     // prepare master-gain
@@ -756,6 +839,9 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
     // Prepare Lfos classes
     lfoMasterFilterModSlow.prepareToPlayOsc(masterSpec);
     lfoMasterFilterMod.prepareToPlayOsc(masterSpec);
+    //master-fm/am-modulation:
+    lfoFmDataMaster.prepareToPlayOsc(masterSpec);
+    lfoAmDataMaster.prepareToPlayOsc(masterSpec);
     // feed all modules with the 'Spec'
     chorusModule.prepare (masterSpec);
     flangerModule.prepare (masterSpec);
@@ -780,31 +866,13 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
             v->prepareToPlay (sampleRate, samplesPerBlock, getTotalNumOutputChannels());
         }
     }
-    //all 4 wt on:
-    (*synthLabOscParams[0].isActivated) = true;
-    (*synthLabOscParams[1].isActivated) = true;
-    (*synthLabOscParams[2].isActivated) = true;
-    (*synthLabOscParams[3].isActivated) = true;
-    //all effects off:
-    (*effekteActiveParams[0].effectIsActive) = false;
-    (*effekteActiveParams[1].effectIsActive) = false;
-    (*effekteActiveParams[2].effectIsActive) = false;
-    (*effekteActiveParams[3].effectIsActive) = false;
-    //gui/filter-switches:
+    //gain/filter-switches:
     (*switchAdrsParams[0].switchGainFilterParam) = true;
     (*switchAdrsParams[1].switchGainFilterParam) = true;
     (*switchAdrsParams[2].switchGainFilterParam) = true;
     (*switchAdrsParams[3].switchGainFilterParam) = true;
-    // sampler on:
-    (*samplerGainParams.isActivated) = true;
-    (*samplerVolumeParam) = -15.0f;
-    // spectro on:
-    (*spectroParams.spectroIsActiveParam) = true;
-    (*spectroParams.spectrogramVolumeParam) = -40.0f;
-    // special modul. off:
-    *glitchActiveParam = false;
     *bothAnalysersActiveParam = false;
-    (*switchBigSmall.ptrKeyBoardBigSmallSwitch) = false;
+
     // prepare and flush a zero-filled buffer of maximum block size:
     zeroBuffer.setSize (getTotalNumOutputChannels(), samplesPerBlock);
     zeroBuffer.clear();
@@ -815,8 +883,6 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
     fftAccumulatorIndex = 0;
     fftAccumulatorBuffer.fill (0.0f);
     // set the slow LFO (which replaces the ADSR) to a slow modulation frequency
-    *masterFilterModulat.envelopeFrequencyP = 0.75f;
-    *masterFilterModulat.wobbleUpperLimitP = 16.0f;
     lfoMasterFilterModSlow.setAMFrequency (0.75f);
     filterGlitch.reset();
     lfoMasterFilterModSlow.reset();
@@ -841,7 +907,7 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
 
 void AudioPluginAudioProcessor::releaseResources()
 {
-    // When playback stops, you can use this as an opportunity to free up any
+    // when playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
@@ -889,7 +955,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         float attack, decay, sustain, release;
         float pan, vol, volDb, tune, reserve, oscilShape;
         float mods[4];
-        bool isSettedP, isActiveP;
+        bool filterIsActive;
     };
     std::array<LocalParams, 4> locSnapShot;
 
@@ -961,36 +1027,40 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         locSnapShot[i].vol = (*synthLabOscParams[i].volumeWTParams);//* 0.25f;
         locSnapShot[i].tune = (*synthLabOscParams[i].tuneWTParams);
         locSnapShot[i].reserve = (*synthLabOscParams[i].reserveWTParams);
+        locSnapShot[i].filterIsActive = synthLabOscParams[i].filterIsActivated->get();
         for (int m = 0; m < 4; ++m)
             locSnapShot[i].mods[m] = (*synthLabOscParams[i].modKnobs[m]);
         locSnapShot[i].oscilShape = (*synthLabOscParams[i].oscillatorShape);
-        locSnapShot[i].isSettedP = (*synthLabOscParams[i].isCurrentlySetted);
     }
 
     for (int ind = 0; ind < 4; ind++) {
 
         const bool _currentIsActive = synthLabOscParams[ind].isActivated->get();
         for (auto* voiceWt : myVoices) {
-                auto p = voiceWt->GetWtOscillator(ind)->getParameters();
-                voiceWt->updateGainAdsrWt(locSnapShot[ind].attack, locSnapShot[ind].decay,
-                    locSnapShot[ind].sustain, locSnapShot[ind].release, ind);
-                if (_currentIsActive != lastIswtActive[ind]) {
+
+            if (auto osc = voiceWt->GetWtOscillator(ind))
+            {
+                if (auto p = osc->getParameters())
+                {
+                    voiceWt->updateGainAdsrWt(locSnapShot[ind].attack, locSnapShot[ind].decay,
+                            locSnapShot[ind].sustain, locSnapShot[ind].release, ind);
                     voiceWt->setWtActive(ind,  _currentIsActive); // activated state
+                    voiceWt->setFilterEnabled(ind, locSnapShot[ind].filterIsActive);
+                    p->waveIndex = locSnapShot[ind].waveP;
+                    p->moduleIndex = locSnapShot[ind].coreP;
+                    p->panValue = locSnapShot[ind].pan;
+                    p->outputAmplitude_dB = locSnapShot[ind].vol;
+                    p->fineDetune = locSnapShot[ind].tune;
+                    voiceWt->setBaseTune(locSnapShot[ind].tune, ind);
+                    p->coarseDetune = locSnapShot[ind].reserve;
+                    for (int m = 0; m < 4; ++m)
+                        p->modKnobValue[m] = locSnapShot[ind].mods[m];
+                    p->oscillatorShape = locSnapShot[ind].oscilShape;
+                    voiceWt->updateVelocityDb(locSnapShot[ind].vol, ind);
+                    voiceWt->GetWtOscillator(ind)->update();
                 }
-                p->waveIndex = locSnapShot[ind].waveP;
-                p->moduleIndex = locSnapShot[ind].coreP;
-                p->panValue = locSnapShot[ind].pan;
-                p->outputAmplitude_dB = locSnapShot[ind].vol;
-                p->fineDetune = locSnapShot[ind].tune;
-                voiceWt->setBaseTune(locSnapShot[ind].tune, ind);
-                p->coarseDetune = locSnapShot[ind].reserve;
-                for (int m = 0; m < 4; ++m)
-                    p->modKnobValue[m] = locSnapShot[ind].mods[m];
-                p->oscillatorShape = locSnapShot[ind].oscilShape;
-                voiceWt->updateVelocityDb(locSnapShot[ind].vol, ind);
-                voiceWt->GetWtOscillator(ind)->update();
+            }
         }
-        lastIswtActive[ind] = _currentIsActive;
     }
     // this state is automatically linked to the keyboard widget in the UI
     magicState.getKeyboardState().processNextMidiBuffer (midiMessages, 0, buffer.getNumSamples(), true);
@@ -1015,6 +1085,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     const float samplerFiltDec  = (*samplerFilterParams.decayFilterSample);
     const float samplerFiltSus  = (*samplerFilterParams.sustainFilterSample);
     const float samplerFiltRel  = (*samplerFilterParams.releaseFilterSample);
+    const bool sampleFiltActive = samplerFilterParams.isActivated->get();
     if (currentSampleFilterType != lastSamplerFilterType) {for (int i = 0; i < samplerSynth.getNumVoices(); ++i) {
         if (auto* voiceSam = dynamic_cast<SamplerVoice*> (samplerSynth.getVoice(i))) {
             voiceSam->setFilterType(currentSampleFilterType);
@@ -1027,6 +1098,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
             voiceSam->updateGainAdsr (samplerAtt, samplerDec, samplerSus, samplerRel);
             voiceSam->updateFilterAdsr (samplerFiltAtt, samplerFiltDec, samplerFiltSus, samplerFiltRel);
             voiceSam->updateFilterParams(sampleFilterFreq, sampleFilterReso, samleFilterEnv);
+            voiceSam->setFilterEnabled(sampleFiltActive);
             if (!samplerIsActive) {
                 (*samplerVolumeParam) = -60.0f;
                 voiceSam->updateVolumenParam(-60.0);
@@ -1035,13 +1107,10 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     }
     // ==============================================================================//
     // === begin polyphonic Sampler Rendering =======================================//
-    // safe resizing without re-allocation (since it is prepared in prepareToPlay)
-    samplerScratchBuffer.setSize (buffer.getNumChannels(), buffer.getNumSamples(), false, true, true);
     samplerScratchBuffer.clear();
     // the sampler reads the same MIDI data and adds its audio data to the buffer
     // the sampler renders in isolation into our scratch buffer
     samplerSynth.renderNextBlock (samplerScratchBuffer, samplerMidiMessages, 0, buffer.getNumSamples());
-    applyNotesMainAdsr(samplerMidiMessages);
     //= ==================================================================================
 
     juce::MidiBuffer spectralMidiMessages = midiMessages;
@@ -1058,8 +1127,6 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     //=== Begin reverse spectrogram synthesis render daten ========================//
     // analyze MIDI for the spectrogram:
     processMidiForSpectrogram (spectralMidiMessages);
-
-    specScratchBuffer.setSize (buffer.getNumChannels(), buffer.getNumSamples(), false, true, true);
     specScratchBuffer.clear();
     // the spectrogram renders in isolation into its own buffer
     renderSpectrogramToBuffer(specScratchBuffer);
@@ -1073,6 +1140,65 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     }
     //=== End Reverse Spectrogram Synthesis ========================================//
     //==============================================================================/
+
+    // ==============================================================================
+    // === MASTER AM & FM MODULATION ================================================
+    // ==============================================================================
+    // update master LFO parameters
+    const int currentMasterFmWave = lfoFmWaveFormParamMaster->getIndex();
+    lfoFmDataMaster.setLfoWave(currentMasterFmWave);
+    lfoFmDataMaster.setFMParams(fmFreqMaster->get(), fmDepthMaster->get());
+
+    const int currentMasterAmWave = lfoAmWaveFormParamMaster->getIndex();
+    lfoAmDataMaster.setLfoWave(currentMasterAmWave);
+    lfoAmDataMaster.setAMParams(amFreqMaster->get(), amDepthMaster->get());
+
+    // ------------------------------------------------------------------------------
+    // master-FM (Path A): Pass the signal through to the voices
+    // ------------------------------------------------------------------------------
+    const float masterFmDepthVal = fmDepthMaster->get();
+    if (masterFmDepthVal > 0.0f)
+    {
+        // We retrieve the current LFO value (granularity per block is sufficient for LFO < 20Hz,
+        // (with audio-rate FM up to 1000 Hz, this can also take place in the voice's sub-block)
+        const float masterFmSignal = lfoFmDataMaster.getNextFMSample();
+        const float masterFmCents  = masterFmSignal * masterFmDepthVal;
+
+        for (auto* voice : myVoices)
+        {
+            // transmits the master FM offset to the voice
+            voice->setMasterFmCents(masterFmCents);
+        }
+    }
+    else
+    {
+        for (auto* voice : myVoices)
+            voice->setMasterFmCents(0.0f);
+    }
+    // ------------------------------------------------------------------------------
+    // master-AM: Direct multiplexing to the summation buffer
+    // ------------------------------------------------------------------------------
+    const float masterAmDepthVal = amDepthMaster->get(); // 0..100
+    if (masterAmDepthVal > 0.0f)
+    {
+        const int numSamples  = buffer.getNumSamples();
+        const int numChannels = buffer.getNumChannels();
+
+        for (int s = 0; s < numSamples; ++s)
+        {
+            const float amSignal = lfoAmDataMaster.getNextAMSample(); // [-1.0, 1.0]
+
+            // amDepth=0 -> 1.0 (no change), amDepth=100 -> Amplitude 0.0 .. 2.0
+            const float amMod = juce::jlimit(0.0f, 2.0f, 1.0f + amSignal * (masterAmDepthVal / 100.0f));
+
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                buffer.setSample(ch, s, buffer.getSample(ch, s) * amMod);
+            }
+        }
+    }
+
+
 
     // ==============================================================================
     // === EXPERIMENTAL GLITCH MODE =================================================
@@ -1138,15 +1264,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         // Reset filter state when glitch mode is inactive to avoid popping sounds upon power-up.
         filterGlitch.reset();
     }
-    // ==============================================================================
-    // --- apply master ADSR  --- ====================================================
-    if (mainGainAdsr.isActive()){
-        mainGainAdsr.applyEnvelopeToBuffer (buffer, 0, buffer.getNumSamples());
-    } else {
-        // when the envelope has completely run out (release is finished),
-        // we ensure that the buffer remains silent.
-        buffer.clear();
-    }
+
     //===============================================================================
 
     //== Effects ===========================================================
@@ -1182,7 +1300,6 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
 
     const bool analys1IsActive = bothAnalysersActiveParam->get();
     // detect status change (edge):
-    // detect state change (edge):
     if (analys1IsActive != wasAnalyserActive) {
         wasAnalyserActive = analys1IsActive;
         if (!analys1IsActive) {
@@ -1198,35 +1315,44 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     //= begin meter ================================================================
     // for the Meter:
     // ── Individual meters: sum all voices ─────────────────────────────────
-    // we need temporary aggregate buffers:
-    juce::AudioBuffer<float> wtMeterSum[4];
     const int numSamples  = buffer.getNumSamples();
     const int numChannels = getTotalNumOutputChannels();
 
-    for (int i = 0; i < 4; ++i) {
-        wtMeterSum[i].setSize(numChannels, numSamples);  wtMeterSum[i].clear();
-        wtMeterSum[i].clear();
-    }
+    // empty all 4 buffers at lightning speed (no heap allocation)
+    for (auto& buf : wtMeterSum)
+        buf.clear();
+
     for (const auto* voice : myVoices) {
         if (!voice->isVoiceActive()) continue;
-
         for (int i = 0; i < 4; ++i) {
             const auto& src = voice->getWtMeterBuffer(i);
-            if (src.getNumSamples() >= numSamples
-                && src.getNumChannels() >= numChannels) {
+            if (src.getNumChannels() >= numChannels && wtMeterSum[i].getNumSamples() >= numSamples) {
                 for (int ch = 0; ch < numChannels; ++ch)
                     wtMeterSum[i].addFrom(ch, 0, src, ch, 0, numSamples);
             }
         }
     }
-    if (synthLabOscParams[0].isActivated)
-        outputWtMeterOscA->pushSamples(wtMeterSum[0]);
-    if (synthLabOscParams[1].isActivated)
-        outputWtMeterOscB->pushSamples(wtMeterSum[1]);
-    if (synthLabOscParams[2].isActivated)
-        outputWtMeterOscC->pushSamples(wtMeterSum[2]);
-    if (synthLabOscParams[3].isActivated)
-        outputWtMeterOscD->pushSamples(wtMeterSum[3]);
+    // create sub-buffers (views) without heap allocation and send them to the GUI meters
+    if (synthLabOscParams[0].isActivated->get() && outputWtMeterOscA != nullptr) {
+        juce::AudioBuffer<float> view (wtMeterSum[0].getArrayOfWritePointers(), numChannels, numSamples);
+        outputWtMeterOscA->pushSamples (view);
+    }
+
+    if (synthLabOscParams[1].isActivated->get() && outputWtMeterOscB != nullptr) {
+        juce::AudioBuffer<float> view (wtMeterSum[1].getArrayOfWritePointers(), numChannels, numSamples);
+        outputWtMeterOscB->pushSamples (view);
+    }
+
+    if (synthLabOscParams[2].isActivated->get() && outputWtMeterOscC != nullptr) {
+        juce::AudioBuffer<float> view (wtMeterSum[2].getArrayOfWritePointers(), numChannels, numSamples);
+        outputWtMeterOscC->pushSamples (view);
+    }
+
+    if (synthLabOscParams[3].isActivated->get() && outputWtMeterOscD != nullptr) {
+        juce::AudioBuffer<float> view (wtMeterSum[3].getArrayOfWritePointers(), numChannels, numSamples);
+        outputWtMeterOscD->pushSamples (view);
+    }
+    //= end of meters ====================================================================
     // ── Master meter: directly from the finished buffer ──────────────────────────
     outputMeterMasterMain->pushSamples(buffer);
     //= end of meters ====================================================================
@@ -1272,6 +1398,22 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
 #pragma endregion PROCESS_BLOCK
 
 #pragma region HELPER_METHODS
+juce::File AudioPluginAudioProcessor::getSampleBaseDir() const
+{
+#ifdef _DEBUG
+    return juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
+#else
+    auto dir = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
+                    .getParentDirectory()   // Standalone
+                    .getParentDirectory()   // Release
+                    .getChildFile ("SynthLabSamples");
+    if (! dir.exists())
+        dir = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
+    return dir;
+#endif
+}
+
+
 float AudioPluginAudioProcessor::convertFrom0To1(std::vector<std::pair<float, float>> controlPointsParam)
 {
     return -60.0f;
@@ -1315,29 +1457,7 @@ void AudioPluginAudioProcessor::pushImageToPixelFIFO (const juce::Image& img)
     }
 }
 
-void AudioPluginAudioProcessor::applyNotesMainAdsr(const juce::MidiBuffer& samplerMidiMessages)
-{
-    mainGainAdsr.updateADSR(*synthMainParams.attackMain, *synthMainParams.decayMain,
-            *synthMainParams.sustainMain, *synthMainParams.releaseMain);
 
-    // --- Master ADSR MIDI-Tracking ---
-    for (const auto metadata : samplerMidiMessages) {
-        const auto msg = metadata.getMessage();
-        if (msg.isNoteOn()){ // velocity > 0?
-            if (activeNoteCount == 0)
-                mainGainAdsr.noteOn();
-            activeNoteCount++;
-        } else if (msg.isNoteOff()){ // react on NoteOff und NoteOn: velovity == 0
-            activeNoteCount = std::max (0, activeNoteCount - 1);
-            if (activeNoteCount == 0)
-                mainGainAdsr.noteOff();
-        }
-        else if (msg.isAllNotesOff() || msg.isAllSoundOff()) {
-            activeNoteCount = 0;
-            mainGainAdsr.noteOff();
-        }
-    }
-}
 
 void AudioPluginAudioProcessor::processMidiForSpectrogram (const juce::MidiBuffer& midiMessages)
 {
@@ -1373,8 +1493,8 @@ void AudioPluginAudioProcessor::timerCallback()
         switch (_counterOscWt1) {
         case 0: {
                 updateAdsrPlot(0);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt1++;
@@ -1387,8 +1507,8 @@ void AudioPluginAudioProcessor::timerCallback()
                 break; }
         case 2: {
                 updateAdsrPlot(2);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt1++;
@@ -1401,8 +1521,8 @@ void AudioPluginAudioProcessor::timerCallback()
                 break; }
         case 4: {
                 updateAdsrPlot(0);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt1++;
@@ -1415,8 +1535,8 @@ void AudioPluginAudioProcessor::timerCallback()
                 break; }
         case 6: {
                 updateAdsrPlot(2);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt1++;
@@ -1433,8 +1553,8 @@ void AudioPluginAudioProcessor::timerCallback()
         switch (_counterOscWt2) {
         case 0: {
                 updateAdsrPlot(0);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt2++;
@@ -1447,8 +1567,8 @@ void AudioPluginAudioProcessor::timerCallback()
                 break; }
         case 2: {
                 updateAdsrPlot(2);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt2++;
@@ -1461,8 +1581,8 @@ void AudioPluginAudioProcessor::timerCallback()
                 break; }
         case 4: {
                 updateAdsrPlot(0);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt2++;
@@ -1476,8 +1596,8 @@ void AudioPluginAudioProcessor::timerCallback()
         case 6:
                 {
                 updateAdsrPlot(2);
-                synthMainParams.mainAdsrMasterPtr->pushSamples(dspTimerDummyBuffer);
-                synthMainParams.mainAdsrMasterPtr->timerInjection();
+                //synthMainParams.synthLabAdsrPtr->pushSamples(dspTimerDummyBuffer);
+                //synthMainParams.synthLabAdsrPtr->timerInjection();
                 samplerFilterParams.samplerAdsrFilterPtr->pushSamples(dspTimerDummyBuffer);
                 samplerFilterParams.samplerAdsrFilterPtr->timerInjection();
                 _counterOscWt2++;
@@ -1783,26 +1903,6 @@ void AudioPluginAudioProcessor::processOutputSpectrogram(juce::AudioBuffer<float
     }
 }
 
-void AudioPluginAudioProcessor::createRandomADSR(int index)
-{// for random starting values
-    // Attack: shorter values more likely (sounds more musical)
-    const float rawA = randomGenerator.nextFloat();
-    if (rawA < 0.4f)
-        randomFloats.randA = 0.001f;  // fast stroke
-    else
-        randomFloats.randA = rawA*2.0f;
-
-    randomFloats.randS = randomGenerator.nextFloat();
-    randomFloats.randR = randomGenerator.nextFloat() * 1.6f;
-}
-
-float AudioPluginAudioProcessor::createFloatForOscShape(int index)
-{// for random starting values as well
-    float ret = randomGeneratorOscShape.nextFloat();
-    if (index % 2 == 0)
-        ret = ret * -1.0f;
-    return ret;
-}
 
 // not used, may be it's not working
 void AudioPluginAudioProcessor::updateLabelColor (const juce::String& elementId, const juce::String& hexColorWithAlpha)
@@ -1842,7 +1942,7 @@ void AudioPluginAudioProcessor::InitMasterModualtionParams()
 
     auto pNameMastModFilterReso = juce::String::fromUTF8(reinterpret_cast<const char*>(u8"MasterMod FilterReso"));
     juce::NormalisableRange<float> resoRange(0.1f, 2.0f, 0.01f);
-    resoRange.setSkewForCentre(1.0f); // 1.0f liegt genau in der Mitte des Reglers!
+    resoRange.setSkewForCentre(1.0f); // 1.0f is exactly in the middle of the slider
     addParameter(masterFilterModulat.filterResoMasterModulParam = new juce::AudioParameterFloat(
         juce::ParameterID("MASTER_MOD_FILTERRESO", 1),
         pNameMastModFilterReso,
@@ -1928,66 +2028,89 @@ void AudioPluginAudioProcessor::InitMasterModualtionParams()
     auto pNameGlitchIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Glitch Active "));
     addParameter(glitchActiveParam = new juce::AudioParameterBool
         (juce::ParameterID ("GLITCH_ACTIVE", 1), pNameGlitchIsActivatedParam, false));
+
+    //=============================================================================================//
+    //=================  fm/am-modulation: ========================================================
+    // fm-mod.
+    auto pNameLfoFmWaveMaster = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Fm WaveMaster "));
+    addParameter(lfoFmWaveFormParamMaster = new juce::AudioParameterChoice(
+        juce::ParameterID ("LFO_FM_WAVE_MASTER", 1), pNameLfoFmWaveMaster,
+        juce::StringArray{"sine", "saw", "square"}, 0));
+    //Lfo Freq
+    juce::NormalisableRange<float> fmFreqRangeMaster(0.0f, 1000.0f, 0.1f);
+    auto pNameFmFreqMaster = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoFmFreqMaster "));
+    addParameter(fmFreqMaster = new juce::AudioParameterFloat(
+        juce::ParameterID ("LFOFMFREQ_MASTER", 1), pNameFmFreqMaster,
+        fmFreqRangeMaster, 7.0f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            return juce::String(value, 0) + " Hz";
+        })
+        .withValueFromStringFunction([](const juce::String& text){
+            return text.getFloatValue();
+        })));
+
+    auto pNameFmDepthMaster = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"FmDepth Master"));
+    juce::NormalisableRange<float> fmDepthRangeMaster(0.0f, 200.0f, 0.1f, 0.4f);
+    addParameter(fmDepthMaster = new juce::AudioParameterFloat(
+        juce::ParameterID ("FMDEPTH_MASTER", 1), pNameFmDepthMaster, fmDepthRangeMaster,
+        20.0f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            if (value >= 1000.0f)
+                return juce::String(value / 1000.0f, 2);
+            return juce::String(value, 0);
+        })
+        .withValueFromStringFunction([](const juce::String& text)
+        {
+            return text.getFloatValue();
+        })));
+
+    // am-modulation
+    auto pNameLfoAmWaveMaster = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Am WaveMaster "));
+    addParameter(lfoAmWaveFormParamMaster = new juce::AudioParameterChoice(
+        juce::ParameterID ("LFO_AM_WAVE_MASTER", 1), pNameLfoAmWaveMaster,
+        juce::StringArray{"sine", "saw", "square"}, 0));
+    //Lfo Freq
+    juce::NormalisableRange<float> amFreqRangeMaster(0.0f, 20.0f, 0.01f, 0.35f);
+    auto pNameAmFreqMaster = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoAmFreqMaster "));
+    addParameter(amFreqMaster = new juce::AudioParameterFloat(
+        juce::ParameterID ("LFOAMFREQ_MASTER", 1),
+        pNameAmFreqMaster,  amFreqRangeMaster, 2.5f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            return juce::String(value, 0) + " Hz"; })
+            .withValueFromStringFunction([](const juce::String& text){
+                return text.getFloatValue();
+            })
+        ));
+
+    auto pNameAmDepthMaster = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"AmDepth Master "));
+    juce::NormalisableRange<float> amDepthRangeMaster(0.0f, 100.0f, 0.1f, 0.4f);
+    addParameter(amDepthMaster = new juce::AudioParameterFloat(
+        juce::ParameterID ("AMDEPTH_MASTER", 1),
+        pNameAmDepthMaster, amDepthRangeMaster, 18.0f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            if (value >= 1000.0f)
+                return juce::String(value / 1000.0f, 2);
+            return juce::String(value, 0);
+        })
+        .withValueFromStringFunction([](const juce::String& text)
+        {
+            return text.getFloatValue();
+        })));
 }
 
 //==============================================================================
 // for the left global sidebar
 void AudioPluginAudioProcessor::InitParamsMasterSound(const std::vector<std::pair<float, float>> controlPointsParam)
 {
-    auto pNameMainAttack = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Attack Main "));
-    addParameter(synthMainParams.attackMain = new juce::AudioParameterFloat(
-        juce::ParameterID ("ATTACK_MAIN _", 1), pNameMainAttack,
-        juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
-        .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
-        ));
-
-    auto pNameMainDecay = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Decay Main "));
-    addParameter(synthMainParams.decayMain = new juce::AudioParameterFloat(
-        juce::ParameterID ("DECAY_MAIN_", 1), pNameMainDecay,
-        juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
-        .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
-        ));
-
-    auto pNameMainSustain = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sustain Main "));
-    addParameter(synthMainParams.sustainMain = new juce::AudioParameterFloat(
-        juce::ParameterID ("SUSTAIN_MAIN_", 1), pNameMainSustain,
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 0.5f), 1.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
-        .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
-        ));
-
-    auto pNameMainRelease = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Release Main "));
-    addParameter(synthMainParams.releaseMain = new juce::AudioParameterFloat(
-        juce::ParameterID ("RELEASE_MAIN_", 1), pNameMainRelease,
-        juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 2.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
-        .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
-        ));
-
     auto pNameAnalysersActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"active Analys "));
     addParameter(bothAnalysersActiveParam = new juce::AudioParameterBool
         (juce::ParameterID ("ANALYS_ACTIVE_", 1), pNameAnalysersActivatedParam, false));
 
-    auto pNameGainMainAdsr = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"gain-MainAdsr"));
-    auto* plotGainMain = synthMainParams.mainAdsrMasterPtr = magicState.createAndAddObject<ADSRPlot>(pNameGainMainAdsr);
-    magicState.addBackgroundProcessing(plotGainMain);
-    if (synthMainParams.mainAdsrMasterPtr != nullptr)
-    {
-        synthMainParams.mainAdsrMasterPtr->setActive(true);
-        synthMainParams.mainAdsrMasterPtr->setParameters(
-        synthMainParams.attackMain,
-        synthMainParams.decayMain,
-         synthMainParams.sustainMain,
-         synthMainParams.releaseMain
-        );
-    }
-    synthMainParams.mainAdsrMasterPtr->setGuiState(magicState);
+
     //===================================================================================
     outputWtMeterOscA = magicState.createAndAddObject<foleys::MagicLevelSource>("outputWtMet_M_OscA");
     outputWtMeterOscB = magicState.createAndAddObject<foleys::MagicLevelSource>("outputWtMet_M_OscB");
@@ -2070,11 +2193,11 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
         addParameter(synthLabOscParams[inx].waveParam = new juce::AudioParameterChoice(
             juce::ParameterID ("SL_WAVE_" + suffixWT, 1), pNameWtWaveParam, waveIndices, inx));
 
-        createRandomADSR(inx);
+
         auto pNameWtAttack = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Attack Wt ")) + suffixWT;
         addParameter(synthLabOscParams[inx].attackGwT = new juce::AudioParameterFloat(
             juce::ParameterID ("ATTACK_WT_" + suffixWT, 1), pNameWtAttack,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.0f*randomFloats.randA,
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.0f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2083,7 +2206,7 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
         auto pNameWtDecay = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Decay Wt ")) + suffixWT;
         addParameter(synthLabOscParams[inx].decayGwT = new juce::AudioParameterFloat(
             juce::ParameterID ("DECAY_WT_" + suffixWT, 1), pNameWtDecay,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.0f*randomFloats.randD,juce::AudioParameterFloatAttributes()
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.0f,juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
         ));
@@ -2091,7 +2214,7 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
         auto pNameWtSustain = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sustain Wt ")) + suffixWT;
         addParameter(synthLabOscParams[inx].sustainGwT = new juce::AudioParameterFloat(
             juce::ParameterID ("SUSTAIN_WT_" + suffixWT, 1), pNameWtSustain,
-            juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 0.5f), 0.7f*randomFloats.randS,
+            juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 0.5f), 0.7f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2100,7 +2223,7 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
         auto pNameWtRelease = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Release Wt ")) + suffixWT;
         addParameter(synthLabOscParams[inx].releaseGwT = new juce::AudioParameterFloat(
             juce::ParameterID ("RELEASE_WT_" + suffixWT, 1), pNameWtRelease,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.5f*randomFloats.randR,
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 1.5f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2122,7 +2245,7 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
             auto pNameModeKnob = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Mod Knob ")) + juce::String(static_cast<char>('A' + i));
             addParameter(synthLabOscParams[inx].modKnobs[i] = new juce::AudioParameterFloat(
                 juce::ParameterID ("SL_MOD_" + knobMode + "_" + suffixWT, 1), pNameModeKnob,
-                0.0f, 1.0f, randomFloats.randD));
+                0.0f, 1.0f, 0.2f));
         }
         // wt volume-params:
         auto pNameWtVolumeParam = juce::String::fromUTF8(
@@ -2153,7 +2276,7 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
         auto pNameWtPanParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Pan ")) + suffixWT;
         addParameter(synthLabOscParams[inx].panWTParams = new juce::AudioParameterFloat(
             juce::ParameterID ("PAN_" + suffixWT, 1), pNameWtPanParam,
-            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.001f), (randomFloats.randR*2)-1,
+            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.001f), 0.8f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2163,7 +2286,7 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
         auto pNameWtReserveParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Reserve ")) + suffixWT;
         addParameter(synthLabOscParams[inx].reserveWTParams = new juce::AudioParameterFloat(
             juce::ParameterID ("RESERVE_" + suffixWT, 1), pNameWtReserveParam,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f), randomFloats.randA,
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f), 0.4f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2173,21 +2296,18 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
         auto oscillatorShape = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Oscillator Shape ")) + suffixWT;
         addParameter(synthLabOscParams[inx].oscillatorShape = new juce::AudioParameterFloat(
             juce::ParameterID ("OSCSHAPE" + suffixWT, 1), oscillatorShape,
-            rangeOscShape, createFloatForOscShape(inx),
+            rangeOscShape, 0.4f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
         ));
 
-        auto pNameWtIsSettedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"IsCurrently Settted ")) + suffixWT;
-        addParameter(synthLabOscParams[inx].isCurrentlySetted = new juce::AudioParameterBool
-            (juce::ParameterID ("ISCURRSETTED_" + suffixWT, 1), pNameWtIsSettedParam, _currDefaultSetted));
 
         auto pNameWtIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"active WT ")) + suffixWT;
         addParameter(synthLabOscParams[inx].isActivated = new juce::AudioParameterBool
-            (juce::ParameterID ("WT_ACTIVE_" + suffixWT, 1), pNameWtIsActivatedParam, true));
+            (juce::ParameterID ("WT_ACTIVE_" + suffixWT, 1), pNameWtIsActivatedParam, false));
 
-        //for switching GUI plot-adsr
+        // for switching GUI plot-adsr
         auto pNameWtGainFilterParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"switch gainFilter WT ")) + suffixWT;
         addParameter(switchAdrsParams[inx].switchGainFilterParam = new juce::AudioParameterBool
             (juce::ParameterID ("WT_SWITCH_GAIN_FILTER_" + suffixWT, 1), pNameWtGainFilterParam, true));
@@ -2217,8 +2337,6 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
             juce::ParameterID ("FILTERTYPE" + suffix, 1), pNameFilterType,
             juce::StringArray{"lowpass", "bandpass", "highpass", "formant"}, std::min(i, 2)));
 
-        // prepare various default values
-        createRandomADSR(i);
 
         // define range
         juce::NormalisableRange<float> filterRange(20.0f, 20000.0f, 0.1f);
@@ -2234,7 +2352,7 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int)
             {
-                // Display Hz as a suffix
+                // display Hz as a suffix
                 if (value >= 1000.0f)
                     return juce::String(value / 1000.0f, 2) + " kHz";
                 return juce::String(value, 0) + " Hz";
@@ -2254,11 +2372,11 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
         ));
 
-        createRandomADSR(i); // Filter envelopes:
+        // filter envelopes:
         auto pNameAttackFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Attack Flt ")) + suffix;
         addParameter(synthLabOscParams[i].attackFilterParam = new juce::AudioParameterFloat(
             juce::ParameterID ("ATTACKFLT" + suffix, 1), pNameAttackFlt,
-            juce::NormalisableRange<float>(0.05f, 0.2f, 0.001f, 0.5f), 0.1f*randomFloats.randA,
+            juce::NormalisableRange<float>(0.05f, 0.2f, 0.001f, 0.5f), 0.1f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2267,7 +2385,7 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
         auto pNameDecayFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Decay Flt ")) + suffix;
         addParameter(synthLabOscParams[i].decayFilterParam = new juce::AudioParameterFloat(
             juce::ParameterID ("DECAYFLT" + suffix, 1), pNameDecayFlt,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8f*randomFloats.randD,
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2276,7 +2394,7 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
         auto pNameSustainFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sustain Flt ")) + suffix;
         addParameter(synthLabOscParams[i].sustainFilterParam = new juce::AudioParameterFloat(
             juce::ParameterID ("SUSTAINFLT" + suffix, 1), pNameSustainFlt,
-            juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 0.5f), 0.5f*randomFloats.randS,
+            juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 0.5f), 0.5f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2285,7 +2403,7 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
         auto pNameReleaseFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Release Flt ")) + suffix;
         addParameter(synthLabOscParams[i].releaseFilterParam = new juce::AudioParameterFloat(
             juce::ParameterID ("RELEASEFLT" + suffix, 1), pNameReleaseFlt,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8*randomFloats.randR,
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -2302,6 +2420,10 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 0); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
         ));
+
+        auto pNameWtFilterActiveParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Wt Filter_active")) + suffix;
+        addParameter(synthLabOscParams[i].filterIsActivated = new juce::AudioParameterBool
+            (juce::ParameterID ("WT_FILTER_ACTIVE_" + suffix, 1), pNameWtFilterActiveParam, true));
     }
 }
 
@@ -2332,7 +2454,6 @@ void AudioPluginAudioProcessor::InitLfoParameters()
                     })
             ));
 
-        createRandomADSR(ind);
         // Lfo Waveform
         auto pNameLfoFmWave = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Fm Wave ")) + suffixLfo;
         addParameter(juceLfoFmParams[ind].lfoFmWaveFormParam = new juce::AudioParameterChoice(
@@ -2358,7 +2479,7 @@ void AudioPluginAudioProcessor::InitLfoParameters()
         addParameter(juceLfoFmParams[ind].lfoFmDepthParam = new juce::AudioParameterFloat(
             juce::ParameterID ("FMDEPTH" + suffixLfo, 1),
             pNameFmDepth, fmDepthRange,
-            (randomFloats.randS*40), juce::AudioParameterFloatAttributes()
+            20.0f, juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int)
             {
                 if (value >= 1000.0f)
@@ -2414,7 +2535,7 @@ void AudioPluginAudioProcessor::InitLfoParameters()
         juce::NormalisableRange<float> amDepthRange(0.0f, 100.0f, 0.1f, 0.4f);
         addParameter(juceLfoAmParams[ind].lfoAmDepthParam = new juce::AudioParameterFloat(
             juce::ParameterID ("AMDEPTH" + suffixLfo, 1),
-            pNameAmDepth, amDepthRange, (randomFloats.randS*25), juce::AudioParameterFloatAttributes()
+            pNameAmDepth, amDepthRange, 18.0f, juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int)
             {
                 if (value >= 1000.0f)
@@ -2454,7 +2575,7 @@ void AudioPluginAudioProcessor::InitSpectroParameters(const std::vector<std::pai
 
     auto pNameSpectroIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Spec Active "));
     addParameter(spectroParams.spectroIsActiveParam = new juce::AudioParameterBool
-        (juce::ParameterID ("SPEC_ACTIVE", 1), pNameSpectroIsActivatedParam, true));
+        (juce::ParameterID ("SPEC_ACTIVE", 1), pNameSpectroIsActivatedParam, false));
 
     juce::NormalisableRange<float> spectroTimeRange(0.7f, 4.0, 0.1f);
     auto pNameSpectroTime = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Spectro Time "));
@@ -2628,19 +2749,19 @@ void AudioPluginAudioProcessor::InitEffekteParameters()
 
     auto pNameChorusIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Chorus Active "));
     addParameter(effekteActiveParams[0].effectIsActive = new juce::AudioParameterBool
-        (juce::ParameterID ("CHORUS_ACTIVE", 1), pNameChorusIsActivatedParam, true));
+        (juce::ParameterID ("CHORUS_ACTIVE", 1), pNameChorusIsActivatedParam, false));
 
     auto pNameFlangerIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Flanger Active "));
     addParameter(effekteActiveParams[1].effectIsActive = new juce::AudioParameterBool
-        (juce::ParameterID ("FLANGER_ACTIVE", 1), pNameFlangerIsActivatedParam, true));
+        (juce::ParameterID ("FLANGER_ACTIVE", 1), pNameFlangerIsActivatedParam, false));
 
     auto pNameDelayIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Delay Active "));
     addParameter(effekteActiveParams[2].effectIsActive = new juce::AudioParameterBool
-        (juce::ParameterID ("DELAY_ACTIVE", 1), pNameDelayIsActivatedParam, true));
+        (juce::ParameterID ("DELAY_ACTIVE", 1), pNameDelayIsActivatedParam, false));
 
     auto pNameReverbIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Reverb Active "));
     addParameter(effekteActiveParams[3].effectIsActive = new juce::AudioParameterBool
-        (juce::ParameterID ("REVERB_ACTIVE", 1), pNameReverbIsActivatedParam, true));
+        (juce::ParameterID ("REVERB_ACTIVE", 1), pNameReverbIsActivatedParam, false));
 
     juce::NormalisableRange<float> dryWetChorusRange(0.0f, 100, 0.01f);
     auto pNameChorusDryWet = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Chorus DryWet "));
@@ -2685,32 +2806,33 @@ void AudioPluginAudioProcessor::InitEffekteParameters()
 
 #pragma region TRIGGER_METHODS
 void AudioPluginAudioProcessor::InitializeWTOscTriggers()
-{
-    // delete any old listeners (in case the tree is reloaded)
+{// for the 4 activation-buttons
     MyPropertyListeners.clear();
 
-    for (int i = 0; i < 4; ++i) {
-        juce::String propName = "wt" + juce::String(i) + "Active";
-        const bool initVal = synthLabOscParams[i].isActivated->get()
-                             ? synthLabOscParams[i].isActivated->get()
-                             : true;
-        // set initial value in PGM (creates the entry in the XML root)
-        auto propValue = magicState.getPropertyAsValue(propName);
-        propValue.setValue(initVal);
-        // attach the lambda listener and save it in the vector
+    for (int i = 0; i < 4; ++i)
+    {
+        juce::String propName = "wt" + juce::String (i) + "Active";
+
+        // cleanly read the initial value from the parameter
+        const bool initVal = synthLabOscParams[i].isActivated->get();
+
+        auto propValue = magicState.getPropertyAsValue (propName);
+
+        // FIRST create and register the listener
         MyPropertyListeners.push_back (std::make_unique<PropertyLambdaListener> (
             propValue,
             [this, i] (bool newValue)
             {
-                if (auto* p = synthLabOscParams[i].isActivated) {
+                if (auto* p = synthLabOscParams[i].isActivated)
                     p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);
-                }
             }
         ));
+        // THEN set the property in magicState (triggers the listener)
+        propValue.setValue (initVal);
     }
 }
 
-//PropertyKeybBigSmallListener
+// switch display plot adsr or filter
 void AudioPluginAudioProcessor::InitializeGainFilterTriggers()
 {
     // delete any old listeners (in case the tree is reloaded)
@@ -2718,12 +2840,10 @@ void AudioPluginAudioProcessor::InitializeGainFilterTriggers()
 
     for (int i = 0; i < 4; ++i) {
         juce::String propName = "switchWT" + juce::String(i) + "adsr";
-        const bool initVal = switchAdrsParams[i].switchGainFilterParam->get()
-                             ? switchAdrsParams[i].switchGainFilterParam->get()
-                             : true;
-        // set initial value in PGM (creates the entry in the XML root)
+        const bool initVal = switchAdrsParams[i].switchGainFilterParam->get();
+
+        // set initial value in PGM (creates the entry in the XML root
         auto propValue = magicState.getPropertyAsValue(propName);
-        propValue.setValue(initVal);
         // attach the lambda listener and save it in the vector
         MyPropertyGainFilterListeners.push_back (std::make_unique<PropertyGainFilterListener> (
             propValue,
@@ -2734,6 +2854,32 @@ void AudioPluginAudioProcessor::InitializeGainFilterTriggers()
                 }
             }
         ));
+        propValue.setValue(initVal);
+    }
+}
+
+// switch fiter function on off
+void AudioPluginAudioProcessor::InitializeSynthFilterActiveTriggers()
+{
+    MyPropertySynthFilterActiveListeners.clear();
+
+    for (int i = 0; i < 4; ++i)
+    {
+        juce::String propName = "wt" + juce::String (i) + "FilterActivated";
+
+        const bool initVal = synthLabOscParams[i].filterIsActivated->get();
+
+        auto propValue = magicState.getPropertyAsValue (propName);
+
+        MyPropertySynthFilterActiveListeners.push_back (std::make_unique<PropertySynthFilterActiveListener> (
+            propValue,
+            [this, i] (bool newValue)
+            {
+                if (auto* p = synthLabOscParams[i].filterIsActivated)
+                    p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);
+            }
+        ));
+        propValue.setValue (initVal);
     }
 }
 
@@ -2742,11 +2888,9 @@ void AudioPluginAudioProcessor::InitializeKeybBigSmallTriggers()
     // delete any old listeners (in case the tree is reloaded)
     MyPropertyKeybBigSmallListeners.clear();
     juce::String propName = "btnkeyBoard";
-    const bool initVal = switchBigSmall.ptrKeyBoardBigSmallSwitch->get()
-                        ? switchBigSmall.ptrKeyBoardBigSmallSwitch->get()
-                        : true;
+    const bool initVal = switchBigSmall.ptrKeyBoardBigSmallSwitch->get();
     auto propValue = magicState.getPropertyAsValue(propName);
-    propValue.setValue(initVal);
+
     MyPropertyKeybBigSmallListeners.push_back (std::make_unique<PropertyKeybBigSmallListener> (
         propValue,
         [this] (bool newValue)
@@ -2755,18 +2899,16 @@ void AudioPluginAudioProcessor::InitializeKeybBigSmallTriggers()
                 TriggerKeyBoard();
                 p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);}
         }));
+    propValue.setValue(initVal);
 }
 
 void AudioPluginAudioProcessor::InitializeAnalysTrigger()
 {
     MyPropertyAnalysButListeners.clear();
     const juce::String propName = "analyseActive";
-    const bool initVal = bothAnalysersActiveParam
-            ? bothAnalysersActiveParam->get()
-            : false;
+    const bool initVal = bothAnalysersActiveParam->get();
 
     auto propVal = magicState.getPropertyAsValue(propName);
-    propVal.setValue(initVal);
 
     MyPropertyAnalysButListeners.push_back (std::make_unique<PropertyAnalysButListener> (
     propVal,[this] (bool newVal)
@@ -2775,18 +2917,16 @@ void AudioPluginAudioProcessor::InitializeAnalysTrigger()
             p->setValueNotifyingHost (newVal ? 1.0f : 0.0f);
         }
     }));
+    propVal.setValue(initVal);
 }
 
 void AudioPluginAudioProcessor::InitializeModActiveTriggers()
 {
     MyPropertyActiveListeners.clear();
     juce::String propName = "bPActive";
-    const bool initVal = glitchActiveParam
-            ? glitchActiveParam->get()
-            : false;
+    const bool initVal = glitchActiveParam->get();
 
     auto propValue = magicState.getPropertyAsValue(propName);
-    propValue.setValue(initVal);
 
     MyPropertyActiveListeners.push_back (std::make_unique<PropertyActiveListener> (
     propValue,[this] (bool newValue)
@@ -2795,18 +2935,15 @@ void AudioPluginAudioProcessor::InitializeModActiveTriggers()
             p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);
         }
     }));
+    propValue.setValue(initVal);
 }
 
 void AudioPluginAudioProcessor::InitializeSamplerActiveTriggers()
 {
     MyPropertySamplerListeners.clear();
     juce::String propName = "sampleActivated";
-    const bool initVal = samplerGainParams.isActivated->get()
-            ? samplerGainParams.isActivated->get()
-            : false;
-
+    const bool initVal = samplerGainParams.isActivated->get();
     auto propValue = magicState.getPropertyAsValue(propName);
-    propValue.setValue(initVal);
 
     MyPropertySamplerListeners.push_back (std::make_unique<PropertySamplerListener> (
     propValue,[this] (bool newValue)
@@ -2815,6 +2952,24 @@ void AudioPluginAudioProcessor::InitializeSamplerActiveTriggers()
             p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);
         }
     }));
+    propValue.setValue(initVal);
+}
+
+void AudioPluginAudioProcessor::InitializeSamplerFilterActiveTriggers()
+{
+    MyPropertySamplerFilterListeners.clear();
+    juce::String propName = "sampleFilterActivated";
+    const bool initVal = samplerGainParams.isActivated->get();
+    auto propValue = magicState.getPropertyAsValue(propName);
+
+    MyPropertySamplerFilterListeners.push_back (std::make_unique<PropertySamplerFilterListener> (
+    propValue,[this] (bool newValue)
+    {
+        if (auto* p = samplerFilterParams.isActivated) {
+            p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);
+        }
+    }));
+    propValue.setValue(initVal);
 }
 
 void AudioPluginAudioProcessor::InitializeEffectsTriggers()
@@ -2822,11 +2977,8 @@ void AudioPluginAudioProcessor::InitializeEffectsTriggers()
     MyPropertyEffectsListeners.clear();
     for (int i = 0; i < 4; ++i) {
         juce::String propName = "effect" + juce::String(i) + "Active";
-        const bool initVal = effekteActiveParams[i].effectIsActive->get()
-                             ? effekteActiveParams[i].effectIsActive->get()
-                             : false;
+        const bool initVal = effekteActiveParams[i].effectIsActive->get();
         auto propValue = magicState.getPropertyAsValue(propName);
-        propValue.setValue(initVal);
         MyPropertyEffectsListeners.push_back (std::make_unique<PropertyEffectsListener> (
             propValue,
             [this, i] (bool newValue)
@@ -2836,6 +2988,7 @@ void AudioPluginAudioProcessor::InitializeEffectsTriggers()
                 }
             }
         ));
+        propValue.setValue(initVal);
     }
 }
 
@@ -2870,7 +3023,7 @@ void AudioPluginAudioProcessor::InitializePresetBarTriggers()
     auto propSave = magicState.getPropertyAsValue ("btnPresetSave");
     propSave.setValue (false);
     MyPresetButtonListeners.push_back (std::make_unique<PropertyButtonListener> (propSave, [this] { triggerSaveFileDialog(); }));
-    // soad button
+    // load button
     auto propLoad = magicState.getPropertyAsValue ("btnPresetLoad");
     propLoad.setValue (false);
     MyPresetButtonListeners.push_back (std::make_unique<PropertyButtonListener> (propLoad, [this] { triggerLoadFileDialog(); }));
@@ -2892,12 +3045,9 @@ void AudioPluginAudioProcessor::InitializeSpectroTriggers()
 {
     MyPropertySpectroListeners.clear();
     juce::String propName = "specActivated";
-    const bool initVal = spectroParams.spectroIsActiveParam
-                        ? spectroParams.spectroIsActiveParam->get()
-                        : true;
+    const bool initVal = spectroParams.spectroIsActiveParam->get();
 
     auto propVal = magicState.getPropertyAsValue(propName);
-    propVal.setValue(initVal);
 
     MyPropertySpectroListeners.push_back (std::make_unique<PropertySpectroListener> (
         propVal,
@@ -2908,6 +3058,7 @@ void AudioPluginAudioProcessor::InitializeSpectroTriggers()
             }
         }
     ));
+    propVal.setValue(initVal);
 }
 
 void AudioPluginAudioProcessor::TriggerTutWindow()
@@ -3025,6 +3176,7 @@ void AudioPluginAudioProcessor::InitializeMinusTrigger()
     MyPropertyMinusButListeners.push_back (std::make_unique<PropertyMinusButListener> (propSave, [this] { setExplicitGuiSize (0.7f);; }));
 }
 
+// few or many keyboard-keys
 void AudioPluginAudioProcessor::TriggerKeyBoard()
 {
     ChangeKeyBoard();
@@ -3064,13 +3216,31 @@ void AudioPluginAudioProcessor::triggerLoadFileDialog()
         juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
         "*.preset"
     );
+
     fileChooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
         [this] (const juce::FileChooser& chooser)
         {
             auto resultFile = chooser.getResult();
-            if (resultFile != juce::File())
+            if (resultFile.existsAsFile())
             {
-                loadPresetFromFile (resultFile);
+                // update the list if a new file has been added.
+                updatePresetList();
+
+                // check whether the selected file exists in our presetFiles array
+                int foundIndex = presetFiles.indexOf (resultFile);
+
+                if (foundIndex != -1)
+                {
+                    // file is in the preset folder -> Load via index & update label
+                    selectPresetByIndex (foundIndex);
+                }
+                else
+                {
+                    // the file is located in a completely different place on the disk:
+                    loadPresetFromFile (resultFile);
+                    currentPresetNameValue.setValue (resultFile.getFileNameWithoutExtension());
+                    currentPresetIndex = -1; // -1 indicates: no active index in the default folder
+                }
             }
         });
 }
@@ -3131,7 +3301,7 @@ void AudioPluginAudioProcessor::LoadFactoryPreset(const int presetNumber)
         juce::ValueTree presetState = juce::ValueTree::fromXml (*xmlElement);
         if (presetState.isValid() && presetState.hasType ("PRESET_ROOT"))
         {
-            // Feed all modules sequentially with the loaded tree
+            // feed all modules sequentially with the loaded tree
             loadWtOscParams (presetState);
             loadWtFilterParams (presetState);
             loadLfoParams (presetState);
@@ -3232,9 +3402,7 @@ void AudioPluginAudioProcessor::saveWtOscParams (juce::ValueTree& parent) const
         if (synthLabOscParams[i].panWTParams) node.setProperty ("pan",       static_cast<float> (*synthLabOscParams[i].panWTParams), nullptr);
         if (synthLabOscParams[i].reserveWTParams) node.setProperty ("reserve",   static_cast<float> (*synthLabOscParams[i].reserveWTParams), nullptr);
         if (synthLabOscParams[i].oscillatorShape) node.setProperty ("oscShape",  static_cast<float> (*synthLabOscParams[i].oscillatorShape), nullptr);
-
-        if (synthLabOscParams[i].isCurrentlySetted) node.setProperty ("isSetted",   synthLabOscParams[i].isCurrentlySetted->get(), nullptr);
-        if (synthLabOscParams[i].isActivated) node.setProperty ("isActivated", synthLabOscParams[i].isActivated->get(), nullptr);
+        if (synthLabOscParams[i].isActivated) node.setProperty ("isActivated",  synthLabOscParams[i].isActivated->get(), nullptr);
 
         group.addChild (node, -1, nullptr);
     }
@@ -3262,6 +3430,7 @@ void AudioPluginAudioProcessor::saveWtFilterParams (juce::ValueTree& parent) con
         if(synthLabOscParams[i].sustainFilterParam) node.setProperty ("sustain", static_cast<float> (*synthLabOscParams[i].sustainFilterParam), nullptr);
         if(synthLabOscParams[i].releaseFilterParam) node.setProperty ("release", static_cast<float> (*synthLabOscParams[i].releaseFilterParam), nullptr);
         if(synthLabOscParams[i].filterEnvelopeAmount) node.setProperty ("envAmount", static_cast<float> (*synthLabOscParams[i].filterEnvelopeAmount), nullptr);
+        if(synthLabOscParams[i].filterIsActivated) node.setProperty ("filterIsActivated",  synthLabOscParams[i].filterIsActivated->get(), nullptr);
 
         group.addChild (node, -1, nullptr);
     }
@@ -3293,11 +3462,6 @@ void AudioPluginAudioProcessor::saveLfoParams(juce::ValueTree& parent) const
 void AudioPluginAudioProcessor::SaveMainParams(juce::ValueTree& parent) const
 {
     juce::ValueTree node ("GLOBAL");
-
-    if(synthMainParams.attackMain) node.setProperty ("ampAttack",  static_cast<float> (*synthMainParams.attackMain), nullptr);
-    if(synthMainParams.decayMain) node.setProperty ("ampDecay",   static_cast<float> (*synthMainParams.decayMain), nullptr);
-    if(synthMainParams.sustainMain) node.setProperty ("ampSustain", static_cast<float> (*synthMainParams.sustainMain), nullptr);
-    if(synthMainParams.releaseMain) node.setProperty ("ampRelease", static_cast<float> (*synthMainParams.releaseMain), nullptr);
 
     if(masterVolumeMainParam) node.setProperty ("masterVolume", static_cast<float> (*masterVolumeMainParam), nullptr);
 
@@ -3331,6 +3495,10 @@ void AudioPluginAudioProcessor::saveSamplerParams(juce::ValueTree& parent) const
 
     if (samplerFilterParams.sampleFilterEnvAmount) node.setProperty ("filterEnvAmount", static_cast<float> (*samplerFilterParams.sampleFilterEnvAmount), nullptr);
     if (samplerGainParams.isActivated) node.setProperty ("samplerActive",  static_cast<bool> (samplerGainParams.isActivated->get()), nullptr);
+
+    if (samplParentDir.isNotEmpty()) node.setProperty ("samplParentDir",  static_cast<juce::String> (samplParentDir), nullptr);
+    if (samplInstrFolder.isNotEmpty()) node.setProperty ("samplInstrFolder",  static_cast<juce::String> (samplInstrFolder), nullptr);
+    if (samplerFilterParams.isActivated) node.setProperty ("samplerFilterActive",  static_cast<bool> (samplerFilterParams.isActivated->get()), nullptr);
 
     parent.addChild (node, -1, nullptr);
 }
@@ -3378,6 +3546,13 @@ void AudioPluginAudioProcessor::saveEnvModulationParam(juce::ValueTree& parent) 
     if (lfoMastModParam.lfoMasterDepthParam) node.setProperty ("lfoDepth",        static_cast<float> (*lfoMastModParam.lfoMasterDepthParam), nullptr);
 
     if (glitchActiveParam) node.setProperty ("isActive",        glitchActiveParam->get(), nullptr);
+
+    if (lfoFmWaveFormParamMaster) node.setProperty("fmWaveFormIndex",  lfoFmWaveFormParamMaster->getIndex(), nullptr);
+    if (lfoAmWaveFormParamMaster) node.setProperty("amWaveFormIndex",  lfoAmWaveFormParamMaster->getIndex(), nullptr);
+    if (fmFreqMaster) node.setProperty ("fmFreqMaster",    static_cast<float> (*fmFreqMaster), nullptr);
+    if (fmDepthMaster) node.setProperty ("fmDepthMaster",    static_cast<float> (*fmDepthMaster), nullptr);
+    if (amFreqMaster) node.setProperty ("amFreqMaster",    static_cast<float> (*amFreqMaster), nullptr);
+    if (amDepthMaster) node.setProperty ("amDepthMaster",    static_cast<float> (*amDepthMaster), nullptr);
 
     parent.addChild (node, -1, nullptr);
 }
@@ -3446,6 +3621,7 @@ void AudioPluginAudioProcessor::loadWtOscParams (const juce::ValueTree& parent)
         if (! node.hasType ("OSC")) continue;
 
         const int i = node.getProperty ("index", -1);
+
         if (i < 0 || i >= 4) continue;
 
         // Restore choice parameters (casts to 'int')
@@ -3498,11 +3674,31 @@ void AudioPluginAudioProcessor::loadWtOscParams (const juce::ValueTree& parent)
         if (node.hasProperty ("oscShape"))
             *synthLabOscParams[i].oscillatorShape = static_cast<float> (node.getProperty ("oscShape"));
 
-        if (node.hasProperty ("isSetted"))
-            *synthLabOscParams[i].isCurrentlySetted = static_cast<bool> (node.getProperty ("isSetted"));
-
         if (node.hasProperty ("isActivated"))
-            *synthLabOscParams[i].isActivated = static_cast<bool> (node.getProperty ("isActivated"));
+        {
+            // convert juce::var to bool from XML in a type-safe manner
+            const auto val = node.getProperty ("isActivated");
+            bool isAct = false;
+
+            if (val.isBool())
+                isAct = static_cast<bool> (val);
+            else if (val.isInt() || val.isInt64())
+                isAct = (static_cast<int> (val) != 0);
+            else
+                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+            // set the C++ AudioParameter
+            if (auto* p = synthLabOscParams[i].isActivated)
+                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+            // update the property in magicState (controls the PGM button in the GUI)
+            juce::String propName = "wt" + juce::String (i) + "Active";
+            magicState.getPropertyAsValue (propName).setValue (isAct);
+            if (synthLabOscParams[i].isActivated->get() == false)
+            {
+                *synthLabOscParams[i].volumeWTParams = -58.0f;
+            }
+        }
     }
 }
 
@@ -3542,6 +3738,25 @@ void AudioPluginAudioProcessor::loadWtFilterParams (const juce::ValueTree& paren
 
         if (node.hasProperty ("envAmount"))
             *synthLabOscParams[i].filterEnvelopeAmount = static_cast<float> (node.getProperty ("envAmount"));
+
+        if (node.hasProperty ("filterIsActivated"))
+        {
+            const auto val = node.getProperty ("filterIsActivated");
+            bool isAct = false;
+
+            if (val.isBool())
+                isAct = static_cast<bool> (val);
+            else if (val.isInt() || val.isInt64())
+                isAct = (static_cast<int> (val) != 0);
+            else
+                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+            if (auto* p = synthLabOscParams[i].filterIsActivated)
+                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+            juce::String propName = "wt" + juce::String (i) + "FilterActivated";
+            magicState.getPropertyAsValue (propName).setValue (isAct);
+        }
     }
 }
 
@@ -3589,18 +3804,6 @@ void AudioPluginAudioProcessor::loadMainParams( const juce::ValueTree& parent)
 {
     auto node = parent.getChildWithName ("GLOBAL");
     if (! node.isValid()) return;
-
-    if (node.hasProperty ("ampAttack"))
-        *synthMainParams.attackMain = static_cast<float> (node.getProperty ("ampAttack"));
-
-    if (node.hasProperty ("ampDecay"))
-        *synthMainParams.decayMain = static_cast<float> (node.getProperty ("ampDecay"));
-
-    if (node.hasProperty ("ampSustain"))
-        *synthMainParams.sustainMain = static_cast<float> (node.getProperty ("ampSustain"));
-
-    if (node.hasProperty ("ampRelease"))
-        *synthMainParams.releaseMain = static_cast<float> (node.getProperty ("ampRelease"));
 
     if (node.hasProperty ("masterVolume"))
         *masterVolumeMainParam = static_cast<float> (node.getProperty ("masterVolume"));
@@ -3662,7 +3865,66 @@ void AudioPluginAudioProcessor::loadSamplerParams(const juce::ValueTree& parent)
         *samplerFilterParams.sampleFilterEnvAmount = static_cast<float> (node.getProperty ("filterEnvAmount"));
 
     if (node.hasProperty ("samplerActive"))
-        *samplerGainParams.isActivated = static_cast<bool> (node.getProperty ("samplerActive"));
+    {
+        const auto val = node.getProperty ("samplerActive");
+        bool isAct = false;
+
+        if (val.isBool())
+            isAct = static_cast<bool> (val);
+        else if (val.isInt() || val.isInt64())
+            isAct = (static_cast<int> (val) != 0);
+        else
+            isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+        if (auto* p = samplerGainParams.isActivated)
+            p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+        juce::String propName = "sampleActivated";
+        magicState.getPropertyAsValue (propName).setValue (isAct);
+    }
+
+    if (node.hasProperty ("samplerFilterActive"))
+    {
+        const auto val = node.getProperty ("samplerFilterActive");
+        bool isAct = false;
+
+        if (val.isBool())
+            isAct = static_cast<bool> (val);
+        else if (val.isInt() || val.isInt64())
+            isAct = (static_cast<int> (val) != 0);
+        else
+            isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+        if (auto* p = samplerFilterParams.isActivated)
+            p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+        juce::String propName = "sampleFilterActivated";
+        magicState.getPropertyAsValue (propName).setValue (isAct);
+    }
+
+    // read folder names and pass them to the magic state (triggers the PropertySamplerBrowseListener).
+    if (node.hasProperty ("samplParentDir"))
+    {
+        samplParentDir = node.getProperty ("samplParentDir").toString();
+        magicState.getPropertyAsValue ("samplParentDir").setValue (samplParentDir);
+    }
+
+    if (node.hasProperty ("samplInstrFolder"))
+    {
+        samplInstrFolder = node.getProperty ("samplInstrFolder").toString();
+        magicState.getPropertyAsValue ("samplInstrFolder").setValue (samplInstrFolder);
+    }
+
+    // update audio engine (load samples from hard drive)
+    if (samplParentDir.isNotEmpty() && samplInstrFolder.isNotEmpty())
+    {
+        auto instrumentFolder = getSampleBaseDir()
+                                    .getChildFile (samplParentDir)
+                                    .getChildFile (samplInstrFolder);
+        if (instrumentFolder.isDirectory()) {
+            loadSampleFromFile (instrumentFolder);
+        }
+    }
 }
 
 
@@ -3678,8 +3940,23 @@ void AudioPluginAudioProcessor::loadSpectrogramParams(const juce::ValueTree& par
         *spectroParams.spectrogramPlayTime = static_cast<float> (node.getProperty ("playTime"));
 
     if (node.hasProperty ("specActivated"))
-        *spectroParams.spectroIsActiveParam = static_cast<bool> (node.getProperty ("specActivated"));
+    {
+        const auto val = node.getProperty ("specActivated");
+        bool isAct = false;
 
+        if (val.isBool())
+            isAct = static_cast<bool> (val);
+        else if (val.isInt() || val.isInt64())
+            isAct = (static_cast<int> (val) != 0);
+        else
+            isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+        if (auto* p = spectroParams.spectroIsActiveParam)
+            p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+        juce::String propName = "specActivated";
+        magicState.getPropertyAsValue (propName).setValue (isAct);
+    }
     // --- read the canvas image from the XML ---
     if (node.hasProperty ("canvasData"))
     {
@@ -3693,7 +3970,7 @@ void AudioPluginAudioProcessor::loadSpectrogramParams(const juce::ValueTree& par
             juce::Image loadedImage = pngFormat.decodeImage (stream);
 
             if (loadedImage.isValid()){
-                // Update local image
+                // update local image
                 canvasImage = loadedImage;
                 // IMPORTANT: update synthesis & UI regarding the new image
                 updateAudioAndUIFromLoadedImage (canvasImage);
@@ -3730,7 +4007,41 @@ void AudioPluginAudioProcessor::loadEnvModulationParam(const juce::ValueTree& pa
         *lfoMastModParam.lfoMasterDepthParam = static_cast<float> (node.getProperty ("lfoDepth"));
 
     if (node.hasProperty ("isActive"))
-        *glitchActiveParam = static_cast<bool> (node.getProperty ("isActive"));
+    {
+        const auto val = node.getProperty ("isActive");
+        bool isAct = false;
+
+        if (val.isBool())
+            isAct = static_cast<bool> (val);
+        else if (val.isInt() || val.isInt64())
+            isAct = (static_cast<int> (val) != 0);
+        else
+            isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+        if (auto* p = glitchActiveParam)
+            p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+        juce::String propName = "bPActive";
+        magicState.getPropertyAsValue (propName).setValue (isAct);
+    }
+
+    if (node.hasProperty ("fmWaveFormIndex"))
+        *lfoFmWaveFormParamMaster = static_cast<int> (node.getProperty ("fmWaveFormIndex"));
+
+    if (node.hasProperty ("amWaveFormIndex"))
+        *lfoAmWaveFormParamMaster = static_cast<int> (node.getProperty ("amWaveFormIndex"));
+
+    if (node.hasProperty ("fmFreqMaster"))
+        *fmFreqMaster = static_cast<float> (node.getProperty ("fmFreqMaster"));
+
+    if (node.hasProperty ("fmDepthMaster"))
+        *fmDepthMaster = static_cast<float> (node.getProperty ("fmDepthMaster"));
+
+    if (node.hasProperty ("amFreqMaster"))
+        *amFreqMaster = static_cast<float> (node.getProperty ("amFreqMaster"));
+
+    if (node.hasProperty ("amDepthMaster"))
+        *amDepthMaster = static_cast<float> (node.getProperty ("amDepthMaster"));
 }
 
 
@@ -3742,7 +4053,23 @@ void AudioPluginAudioProcessor::loadEffectParam(const juce::ValueTree& parent)
     auto chorusNode = group.getChildWithName ("CHORUS");
     if (chorusNode.isValid())
     {
-        if (chorusNode.hasProperty ("chorusIsActive"))    *effekteActiveParams[0].effectIsActive = static_cast<bool> (chorusNode.getProperty ("chorusIsActive"));
+        if (chorusNode.hasProperty ("chorusIsActive"))
+        {
+            const auto val = chorusNode.getProperty ("chorusIsActive");
+            bool isAct = false;
+
+            if (val.isBool())
+                isAct = static_cast<bool> (val);
+            else if (val.isInt() || val.isInt64())
+                isAct = (static_cast<int> (val) != 0);
+            else
+                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+            if (auto* p = effekteActiveParams[0].effectIsActive)
+                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+            juce::String propName = "effect0Active";
+            magicState.getPropertyAsValue (propName).setValue (isAct);
+        }
+
         if (chorusNode.hasProperty ("rate"))        *chorusRateParam = static_cast<float> (chorusNode.getProperty ("rate"));
         if (chorusNode.hasProperty ("depth"))       *chorusDepthParam = static_cast<float> (chorusNode.getProperty ("depth"));
         if (chorusNode.hasProperty ("feedback"))    *chorusFeedBack = static_cast<float> (chorusNode.getProperty ("feedback"));
@@ -3753,7 +4080,23 @@ void AudioPluginAudioProcessor::loadEffectParam(const juce::ValueTree& parent)
     auto flangerNode = group.getChildWithName ("FLANGER");
     if (flangerNode.isValid())
     {
-        if (flangerNode.hasProperty ("flangerIsActive"))    *effekteActiveParams[1].effectIsActive = static_cast<bool> (flangerNode.getProperty ("flangerIsActive"));
+        if (flangerNode.hasProperty ("flangerIsActive"))
+        {
+            const auto val = flangerNode.getProperty ("flangerIsActive");
+            bool isAct = false;
+
+            if (val.isBool())
+                isAct = static_cast<bool> (val);
+            else if (val.isInt() || val.isInt64())
+                isAct = (static_cast<int> (val) != 0);
+            else
+                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+            if (auto* p = effekteActiveParams[1].effectIsActive)
+                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+            juce::String propName = "effect1Active";
+            magicState.getPropertyAsValue (propName).setValue (isAct);
+        }
+
         if (flangerNode.hasProperty ("rate"))        *flangerRateParam = static_cast<float> (flangerNode.getProperty ("rate"));
         if (flangerNode.hasProperty ("depth"))       *flangerDepthParam = static_cast<float> (flangerNode.getProperty ("depth"));
         if (flangerNode.hasProperty ("feedback"))    *flangerFeedBackParam = static_cast<float> (flangerNode.getProperty ("feedback"));
@@ -3764,7 +4107,22 @@ void AudioPluginAudioProcessor::loadEffectParam(const juce::ValueTree& parent)
     auto delayNode = group.getChildWithName ("DELAY");
     if (delayNode.isValid())
     {
-        if (delayNode.hasProperty ("delayIsActive")) *effekteActiveParams[2].effectIsActive = static_cast<bool> (delayNode.getProperty ("delayIsActive"));
+        if (delayNode.hasProperty ("delayIsActive"))
+        {
+            const auto val = delayNode.getProperty ("delayIsActive");
+            bool isAct = false;
+
+            if (val.isBool())
+                isAct = static_cast<bool> (val);
+            else if (val.isInt() || val.isInt64())
+                isAct = (static_cast<int> (val) != 0);
+            else
+                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+            if (auto* p = effekteActiveParams[2].effectIsActive)
+                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+            juce::String propName = "effect2Active";
+            magicState.getPropertyAsValue (propName).setValue (isAct);
+        }
         if (delayNode.hasProperty ("master"))   *delayMaster = static_cast<float> (delayNode.getProperty ("master"));
         if (delayNode.hasProperty ("timeMs"))   *delayTimeMsParam = static_cast<float> (delayNode.getProperty ("timeMs"));
         if (delayNode.hasProperty ("mix"))      *delayMix = static_cast<float> (delayNode.getProperty ("mix"));
@@ -3774,7 +4132,23 @@ void AudioPluginAudioProcessor::loadEffectParam(const juce::ValueTree& parent)
     auto reverbNode = group.getChildWithName ("REVERB");
     if (reverbNode.isValid())
     {
-        if (reverbNode.hasProperty ("reverbIsActive")) *effekteActiveParams[3].effectIsActive = static_cast<bool> (reverbNode.getProperty ("reverbIsActive"));
+        if (reverbNode.hasProperty ("reverbIsActive"))
+        {
+            const auto val = reverbNode.getProperty ("reverbIsActive");
+            bool isAct = false;
+
+            if (val.isBool())
+                isAct = static_cast<bool> (val);
+            else if (val.isInt() || val.isInt64())
+                isAct = (static_cast<int> (val) != 0);
+            else
+                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+            if (auto* p = effekteActiveParams[3].effectIsActive)
+                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+            juce::String propName = "effect3Active";
+            magicState.getPropertyAsValue (propName).setValue (isAct);
+        }
+
         if (reverbNode.hasProperty ("room"))     *reverbRoomParam = static_cast<float> (reverbNode.getProperty ("room"));
         if (reverbNode.hasProperty ("damping"))  *reverbDampingParam = static_cast<float> (reverbNode.getProperty ("damping"));
         if (reverbNode.hasProperty ("dryWet"))   *reverbDryWetParam = static_cast<float> (reverbNode.getProperty ("dryWet"));
@@ -3790,7 +4164,24 @@ void AudioPluginAudioProcessor::loadKeyBoardParams (const juce::ValueTree& paren
     auto keyBoardNode = group.getChildWithName ("KEYB_BIG_SMALL");
     if (keyBoardNode.isValid())
     {
-       if (keyBoardNode.hasProperty("bigOrSmall")) *switchBigSmall.ptrKeyBoardBigSmallSwitch = static_cast<bool> (keyBoardNode.getProperty ("bigOrSmall"));
+       if (keyBoardNode.hasProperty("bigOrSmall"))
+       {
+           const auto val = keyBoardNode.getProperty ("bigOrSmall");
+           bool isAct = false;
+
+           if (val.isBool())
+               isAct = static_cast<bool> (val);
+           else if (val.isInt() || val.isInt64())
+               isAct = (static_cast<int> (val) != 0);
+           else
+               isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+           if (auto* p = switchBigSmall.ptrKeyBoardBigSmallSwitch)
+               p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+           juce::String propName = "btnkeyBoard";
+           magicState.getPropertyAsValue (propName).setValue (isAct);
+       }
     }
 }
 
@@ -3800,7 +4191,6 @@ void AudioPluginAudioProcessor::updatePresetList()
     presetFiles.clear();
     // scans the folder for all .preset files
     presetFiles = presetDirectory.findChildFiles (juce::File::findFiles, false, "*.preset");
-
     // try to locate the currently loaded preset in the new list
     if (currentPresetIndex >= 0 && presetFiles.size() > 0)
     {
@@ -3809,33 +4199,59 @@ void AudioPluginAudioProcessor::updatePresetList()
     }
 }
 
-
-void AudioPluginAudioProcessor::cyclePreset (int direction)
+void AudioPluginAudioProcessor::loadMostRecentPreset()
 {
     // update the list if the user has moved files in Explorer while the application is running
     updatePresetList();
-
-    if (presetFiles.isEmpty())
-    {
+    if (presetFiles.isEmpty()) {
         currentPresetNameValue.setValue ("Keine Presets gefunden");
+        currentPresetIndex = -1;
         return;
     }
+    auto newestIt = std::max_element (presetFiles.begin(), presetFiles.end(),
+        [] (const juce::File& a, const juce::File& b) {
+            return a.getLastModificationTime() < b.getLastModificationTime();
+        });
+    if (newestIt != presetFiles.end())
+    {
+        // calculate the index of the found iterator in the array
+        int index = static_cast<int> (std::distance (presetFiles.begin(), newestIt));
+        // activate the preset and set the label
+        selectPresetByIndex (index);
+    }
+}
 
-    // switch next the index
+
+void AudioPluginAudioProcessor::selectPresetByIndex (int index)
+{
+    if (index < 0 || index >= presetFiles.size())
+        return;
+    // define index & file
+    currentPresetIndex = index;
+    juce::File targetPreset = presetFiles[currentPresetIndex];
+    // apply to the hard drive/processor
+    loadPresetFromFile (targetPreset);
+    // update GUI label (without the .preset extension)
+    currentPresetNameValue.setValue (targetPreset.getFileNameWithoutExtension());
+}
+
+
+void AudioPluginAudioProcessor::cyclePreset (int direction)
+{
+    updatePresetList();
+    if (presetFiles.isEmpty())
+    {
+        currentPresetNameValue.setValue ("No presets found");
+        return;
+    }
     currentPresetIndex += direction;
-
-    // lap wrapping: If we fall off the back -> start at the front, and vice versa
+    // overflow protection (wrap-around)
     if (currentPresetIndex >= presetFiles.size())
         currentPresetIndex = 0;
     if (currentPresetIndex < 0)
         currentPresetIndex = presetFiles.size() - 1;
-
-    // load the target preset from the hard drive
-    juce::File targetPreset = presetFiles[currentPresetIndex];
-    loadPresetFromFile (targetPreset);
-
-    // update the UI label (filename without the ugly ".preset" extension
-    currentPresetNameValue.setValue (targetPreset.getFileNameWithoutExtension());
+    // call central (preset)logic
+    selectPresetByIndex (currentPresetIndex);
 }
 //=== end serialization ===============================================
 // ======================================================================
@@ -3843,52 +4259,404 @@ void AudioPluginAudioProcessor::cyclePreset (int direction)
 
 #pragma region SAMPLING_METHODS
 //========== Sampling ===================================================
-void AudioPluginAudioProcessor::loadSampleFromFile (const juce::File& instrumentFolder)
+void AudioPluginAudioProcessor::loadSampleFromFile (const juce::File& sampleSource)
 {
-    samplerSynth.clearSounds();
+    if (!sampleSource.exists()) return;
 
-    if (!instrumentFolder.isDirectory()) return;
-    // temporary list of smart pointers for sorting and calculation
-    std::vector<SamplerZoneSound::Ptr> tempSounds;
-
-    for (const auto& entry : juce::RangedDirectoryIterator (instrumentFolder, false, "*.wav", juce::File::findFiles))
+    // update state values for preset persistence
+    if (sampleSource.existsAsFile() && sampleSource.getFileExtension() == ".sfz")
     {
-        auto file = entry.getFile();
-        std::unique_ptr<juce::AudioFormatReader> reader (formatManager.createReaderFor (file));
+        samplParentDir   = sampleSource.getParentDirectory().getParentDirectory().getFileNameWithoutExtension();
+        samplInstrFolder = sampleSource.getParentDirectory().getFileNameWithoutExtension();
+        samplFile        = sampleSource.getFileName();
+    }
+    else if (sampleSource.isDirectory())
+    {
+        samplParentDir   = sampleSource.getParentDirectory().getFileNameWithoutExtension();
+        samplInstrFolder = sampleSource.getFileNameWithoutExtension();
+        samplFile        = "";
+    }
 
-        if (reader != nullptr)
+    magicState.getPropertyAsValue ("samplParentDir").setValue (samplParentDir);
+    magicState.getPropertyAsValue ("samplInstrFolder").setValue (samplInstrFolder);
+    magicState.getPropertyAsValue ("samplFile").setValue (samplFile);
+
+    // clean up the previous loading thread if one is still running.
+    if (sampleLoadingThread.joinable())
+        sampleLoadingThread.detach();
+
+    // Run I/O entirely in the background
+    sampleLoadingThread = std::thread ([this, sampleSource]()
+    {
+        loadSampleSourceInBackground (sampleSource);
+    });
+}
+
+void AudioPluginAudioProcessor::loadSfzPresetToBuffer (const juce::File& sfzFile,
+                                                        juce::Array<juce::SynthesiserSound::Ptr>& targetArray)
+{
+    if (!sfzFile.existsAsFile()) return;
+
+    juce::File rootDir = findLibraryRoot (sfzFile);
+    std::map<juce::String, juce::String> defines;
+
+    auto instantiateRegion = [&] (const SfzParseState& state, const juce::String& samplePath)
+    {
+        if (samplePath.isEmpty()) return;
+
+        juce::String fullRelPath = state.defaultPath + samplePath;
+        juce::File audioFile = findPathCaseInsensitive (rootDir, fullRelPath);
+
+        if (!audioFile.existsAsFile())
+            audioFile = findPathCaseInsensitive (rootDir, samplePath);
+
+        if (!audioFile.existsAsFile())
+            audioFile = findPathCaseInsensitive (sfzFile.getParentDirectory(), samplePath);
+
+        if (audioFile.existsAsFile())
         {
-            int rootNote = parseRootNoteFromFilename (file);
+            std::unique_ptr<juce::AudioFormatReader> reader (formatManager.createReaderFor (audioFile));
+            if (reader != nullptr)
+            {
+                juce::AudioBuffer<float> tempBuffer (static_cast<int> (reader->numChannels),
+                                                     static_cast<int> (reader->lengthInSamples));
+                reader->read (&tempBuffer, 0, static_cast<int> (reader->lengthInSamples), 0, true, true);
 
-            juce::AudioBuffer<float> tempBuffer (static_cast<int> (reader->numChannels),
-                                                 static_cast<int> (reader->lengthInSamples));
+                if (state.volumeDb != 0.0f)
+                    tempBuffer.applyGain (juce::Decibels::decibelsToGain (state.volumeDb));
 
-            reader->read (&tempBuffer, 0, static_cast<int> (reader->lengthInSamples), 0, true, true);
-            // Push into the temporary vector
-            tempSounds.push_back (new SamplerZoneSound (rootNote, std::move (tempBuffer), reader->sampleRate));
+                auto* newSound = new SamplerZoneSound (state.rootNote, std::move (tempBuffer), reader->sampleRate);
+                newSound->minMidiNote = state.loKey;
+                newSound->maxMidiNote = state.hiKey;
+
+                // determine loop status:
+                bool shouldLoop = state.isLooping;
+                int lStart = state.loopStart;
+                int lEnd   = state.loopEnd;
+
+                // if no loop was defined in the SFZ: read WAV metadata (smpl chunk):
+                if (!shouldLoop)
+                {
+                    const auto& metadata = reader->metadataValues;
+                    int numLoops = metadata.getValue ("NumSampleLoops", "0").getIntValue();
+
+                    if (numLoops > 0)
+                    {
+                        shouldLoop = true;
+                        lStart = metadata.getValue ("Loop0Start", "0").getIntValue();
+                        lEnd   = metadata.getValue ("Loop0End",   "0").getIntValue();
+                    }
+                }
+
+                newSound->isLooping = shouldLoop;
+                newSound->loopStart = lStart;
+                newSound->loopEnd   = (lEnd > lStart) ? lEnd : static_cast<int> (reader->lengthInSamples);
+
+                targetArray.add (newSound);
+            }
+        }
+    };
+
+    // recursive parsing with a three-level state hierarchy
+    std::function<void(const juce::File&, SfzParseState)> parseSfzRecursive =
+        [&] (const juce::File& fileToParse, SfzParseState inheritedState)
+    {
+        if (!fileToParse.existsAsFile()) return;
+        juce::StringArray lines;
+        fileToParse.readLines (lines);
+        SfzParseState globalState        = inheritedState;
+        SfzParseState groupState         = globalState;
+        SfzParseState currentRegionState = groupState;
+        juce::String currentSamplePath   = "";
+        bool inGroup                     = false;
+        bool inRegion                    = false;
+
+        auto flushRegion = [&]()
+        {
+            if (inRegion && currentSamplePath.isNotEmpty()) {
+                instantiateRegion (currentRegionState, currentSamplePath);
+            }
+            currentRegionState = groupState;
+            currentSamplePath  = "";
+            inRegion           = false;
+        };
+        // helper lambda for sorting macros by length (prevents substring replacements)
+        auto getSortedDefines = [&]()
+        {
+            std::vector<std::pair<juce::String, juce::String>> sorted (defines.begin(), defines.end());
+            std::sort (sorted.begin(), sorted.end(),
+                       [](const auto& a, const auto& b) { return a.first.length() > b.first.length(); });
+            return sorted;
+        };
+        for (auto rawLine : lines)
+        {
+            juce::String line = rawLine.replaceCharacter ('\t', ' ').trim();
+            if (line.isEmpty() || line.startsWith ("//")) continue;
+
+            // processing #define
+            if (line.startsWithIgnoreCase ("#define"))
+            {
+                auto parts = juce::StringArray::fromTokens (line, " ", "\"");
+                if (parts.size() >= 3)
+                    defines[parts[1]] = parts[2].unquoted();
+                continue;
+            }
+            // replace macros in descending order of length.
+            auto sortedDefines = getSortedDefines();
+            for (const auto& [varName, varVal] : sortedDefines)
+                line = line.replace (varName, varVal);
+
+            // manage SFZ header tags
+            if (line.containsIgnoreCase ("<control>") || line.containsIgnoreCase ("<global>"))
+            {
+                flushRegion();
+                inGroup = false;
+            }
+            else if (line.containsIgnoreCase ("<group>"))
+            {
+                flushRegion();
+                inGroup = true;
+                groupState = globalState; // Erbt vom Datei-weiten Global-Status!
+                currentRegionState = groupState;
+            }
+            else if (line.containsIgnoreCase ("<region>"))
+            {
+                flushRegion();
+                inRegion = true;
+                if (!inGroup) groupState = globalState;
+                currentRegionState = groupState;
+            }
+            // parsing key-Value opcodes
+            auto opcodes = parseSfzLineOpcodes (line);
+            for (const auto& op : opcodes)
+            {
+                if (op.key.equalsIgnoreCase ("default_path"))
+                {
+                    auto pathVal = op.value.unquoted().replaceCharacter ('\\', '/');
+                    if (!pathVal.endsWithChar ('/')) pathVal += "/";
+                    globalState.defaultPath        = pathVal;
+                    groupState.defaultPath         = pathVal;
+                    currentRegionState.defaultPath = pathVal;
+                }
+                else if (op.key.equalsIgnoreCase ("sample"))
+                {
+                    if (currentSamplePath.isNotEmpty())
+                        flushRegion();
+                    currentSamplePath = op.value.unquoted();
+                    inRegion          = true;
+                }
+                else if (op.key.equalsIgnoreCase ("key"))
+                {
+                    int note = parseSfzNote (op.value);
+                    currentRegionState.rootNote = currentRegionState.loKey = currentRegionState.hiKey = note;
+                    if (!inRegion && inGroup) groupState.rootNote = groupState.loKey = groupState.hiKey = note;
+                    else if (!inRegion && !inGroup) globalState.rootNote = globalState.loKey = globalState.hiKey = note;
+                }
+                else if (op.key.equalsIgnoreCase ("lokey"))
+                {
+                    int note = parseSfzNote (op.value);
+                    currentRegionState.loKey = note;
+                    if (!inRegion && inGroup) groupState.loKey = note;
+                    else if (!inRegion && !inGroup) globalState.loKey = note;
+                }
+                else if (op.key.equalsIgnoreCase ("hikey"))
+                {
+                    int note = parseSfzNote (op.value);
+                    currentRegionState.hiKey = note;
+                    if (!inRegion && inGroup) groupState.hiKey = note;
+                    else if (!inRegion && !inGroup) globalState.hiKey = note;
+                }
+                else if (op.key.equalsIgnoreCase ("pitch_keycenter"))
+                {
+                    int note = parseSfzNote (op.value);
+                    currentRegionState.rootNote = note;
+                    if (!inRegion && inGroup) groupState.rootNote = note;
+                    else if (!inRegion && !inGroup) globalState.rootNote = note;
+                }
+                else if (op.key.equalsIgnoreCase ("volume"))
+                {
+                    float vol = op.value.getFloatValue();
+                    currentRegionState.volumeDb = vol;
+                    if (!inRegion && inGroup) groupState.volumeDb = vol;
+                    else if (!inRegion && !inGroup) globalState.volumeDb = vol;
+                }
+                else if (op.key.equalsIgnoreCase ("loop_mode") || op.key.equalsIgnoreCase ("loopmode"))
+                {
+                    bool loop = op.value.containsIgnoreCase ("loop_continuous")
+                             || op.value.containsIgnoreCase ("forward")
+                             || (!op.value.containsIgnoreCase ("one_shot") && !op.value.containsIgnoreCase ("no_loop"));
+                    currentRegionState.isLooping = loop;
+                    if (!inRegion && inGroup) groupState.isLooping = loop;
+                    else if (!inRegion && !inGroup) globalState.isLooping = loop;
+                }
+                else if (op.key.equalsIgnoreCase ("loop_start") || op.key.equalsIgnoreCase ("loopstart"))
+                {
+                    int start = op.value.getIntValue();
+                    currentRegionState.loopStart = start;
+                    if (!inRegion && inGroup) groupState.loopStart = start;
+                    else if (!inRegion && !inGroup) globalState.loopStart = start;
+                }
+                else if (op.key.equalsIgnoreCase ("loop_end") || op.key.equalsIgnoreCase ("loopend"))
+                {
+                    int end = op.value.getIntValue();
+                    currentRegionState.loopEnd = end;
+                    if (!inRegion && inGroup) groupState.loopEnd = end;
+                    else if (!inRegion && !inGroup) globalState.loopEnd = end;
+                }
+            }
+            // recursively call #include
+            if (line.containsIgnoreCase ("#include"))
+            {
+                flushRegion();
+                auto idx = line.indexOfIgnoreCase ("#include");
+                auto afterInc = line.substring (idx + 8).trim();
+                juce::String incPath;
+
+                if (afterInc.startsWith ("\""))
+                    incPath = afterInc.fromFirstOccurrenceOf ("\"", false, false).upToFirstOccurrenceOf ("\"", false, false);
+                else
+                    incPath = afterInc.upToFirstOccurrenceOf (" ", false, false);
+
+                incPath = incPath.unquoted().trim();
+                juce::File incFile = findPathCaseInsensitive (rootDir, incPath);
+
+                if (!incFile.existsAsFile())
+                    incFile = findPathCaseInsensitive (fileToParse.getParentDirectory(), incPath);
+                if (incFile.existsAsFile()) {
+                    // pass the current group or global status to the include file!
+                    parseSfzRecursive (incFile, inGroup ? groupState : globalState);
+                }
+                else{
+                    //std::cout << "SFZ Warning: Include nicht gefunden: " << incPath.toStdString() << std::endl;
+                }
+            }
+        }
+        flushRegion();
+    };
+    SfzParseState initialState;
+    parseSfzRecursive (sfzFile, initialState);
+    /*std::cout << "SFZ loaded preset: " << sfzFile.getFileName().toStdString()
+              << " | loaded sounds: " << samplerSynth.getNumSounds() << std::endl;*/
+}
+
+void AudioPluginAudioProcessor::loadSampleSourceInBackground (const juce::File& sampleSource)
+{
+    // local buffer for smart pointers (ReferenceCountedObjectPtr)
+    juce::Array<juce::SynthesiserSound::Ptr> loadedSounds;
+    // CASE A: SFZ file
+    if (sampleSource.existsAsFile() && sampleSource.getFileExtension() == ".sfz")
+    {
+        loadSfzPresetToBuffer (sampleSource, loadedSounds);
+    }
+    // CASE B: folder
+    else if (sampleSource.isDirectory())
+    {
+        juce::Array<juce::File> sfzFiles;
+        for (const auto& entry : juce::RangedDirectoryIterator (sampleSource, true, "*.sfz", juce::File::findFiles))
+            sfzFiles.add (entry.getFile());
+
+        if (!sfzFiles.isEmpty())
+        {
+            loadSfzPresetToBuffer (sfzFiles.getFirst(), loadedSounds);
+        }
+        else {
+            // the sampler structures without sfz (clean, using smart pointers)
+            std::vector<SamplerZoneSound::Ptr> tempSounds;
+            for (const auto& entry : juce::RangedDirectoryIterator (sampleSource, true, "*.wav", juce::File::findFiles))
+            {
+                auto file = entry.getFile();
+                std::unique_ptr<juce::AudioFormatReader> reader (formatManager.createReaderFor (file));
+                if (reader != nullptr)
+                {
+                    int rootNote = parseRootNoteFromFilename (file);
+                    juce::AudioBuffer<float> tempBuffer (static_cast<int> (reader->numChannels),
+                                                         static_cast<int> (reader->lengthInSamples));
+                    reader->read (&tempBuffer, 0, static_cast<int> (reader->lengthInSamples), 0, true, true);
+
+                    // creates a SamplerZoneSound::Ptr (ref-counted smart pointer)
+                    tempSounds.push_back (new SamplerZoneSound (rootNote, std::move (tempBuffer), reader->sampleRate));
+                }
+            }
+            if (!tempSounds.empty())
+            {
+                std::sort (tempSounds.begin(), tempSounds.end(), [](const SamplerZoneSound::Ptr& a, const SamplerZoneSound::Ptr& b) {
+                    return a->rootMidiNote < b->rootMidiNote;
+                });
+                for (size_t i = 0; i < tempSounds.size(); ++i)
+                {
+                    int low = 0;
+                    int high = 127;
+                    if (i > 0)
+                        low = (tempSounds[i - 1]->rootMidiNote + tempSounds[i]->rootMidiNote) / 2 + 1;
+                    if (i < tempSounds.size() - 1)
+                        high = (tempSounds[i]->rootMidiNote + tempSounds[i + 1]->rootMidiNote) / 2;
+
+                    tempSounds[i]->minMidiNote = low;
+                    tempSounds[i]->maxMidiNote = high;
+                    // simply move it into the JUCE array (no messy delete required!)
+                    loadedSounds.add (tempSounds[i]);
+                }
+            }
         }
     }
-    // sort in ascending order by root note
-    std::sort (tempSounds.begin(), tempSounds.end(), [](const SamplerZoneSound::Ptr& a, const SamplerZoneSound::Ptr& b) {
-        return a->rootMidiNote < b->rootMidiNote;
-    });
-    // Calculate mathematical key ranges (zoning) for the transitions
-    for (size_t i = 0; i < tempSounds.size(); ++i)
+    // !! atomic exchange in the synthesizer (execute on the message thread)
+    if (!loadedSounds.isEmpty())
     {
-        int low = 0;
-        int high = 127;
-        // Lower limit: The midpoint of the previous sample + 1
-        if (i > 0)
-            low = (tempSounds[i - 1]->rootMidiNote + tempSounds[i]->rootMidiNote) / 2 + 1;
-        // Upper limit: The midpoint to the next sample
-        if (i < tempSounds.size() - 1)
-            high = (tempSounds[i]->rootMidiNote + tempSounds[i + 1]->rootMidiNote) / 2;
-
-        tempSounds[i]->minMidiNote = low;
-        tempSounds[i]->maxMidiNote = high;
-        // Now safely send it to the synth
-        samplerSynth.addSound (tempSounds[i]);
+        juce::MessageManager::callAsync ([this, soundsToTransfer = std::move (loadedSounds)]()
+        {
+            samplerSynth.clearSounds();
+            for (auto& sound : soundsToTransfer)
+            {
+                samplerSynth.addSound (sound);
+            }
+        });
     }
+}
+
+
+// helper function to convert SFZ notes (e.g., "c3" or "60") to int
+int AudioPluginAudioProcessor::parseSfzNote (const juce::String& noteStr)
+{
+    auto str = noteStr.trim().toLowerCase();
+    if (str.isEmpty())
+        return 60; // Fallback C4 (MIDI 60)
+    // is it already just a number? (e.g., "60")
+    if (str.containsOnly ("0123456789-"))
+        return str.getIntValue();
+    // determine the note name and accidentals (semitones)
+    int noteIndex = -1;
+    int charOffset = 1;
+    // first check 2-character notes with '#' or 'b' (e.g., "c#", "db")
+    if (str.length() > 1 && (str[1] == '#' || str[1] == 'b'))
+    {
+        juce::String noteWithAcc = str.substring (0, 2);
+        if      (noteWithAcc == "c#" || noteWithAcc == "db") noteIndex = 1;
+        else if (noteWithAcc == "d#" || noteWithAcc == "eb") noteIndex = 3;
+        else if (noteWithAcc == "f#" || noteWithAcc == "gb") noteIndex = 6;
+        else if (noteWithAcc == "g#" || noteWithAcc == "ab") noteIndex = 8;
+        else if (noteWithAcc == "a#" || noteWithAcc == "bb") noteIndex = 10;
+
+        charOffset = 2;
+    }
+    // if no accidental was found, check the natural note (e.g., "c", "d")
+    if (noteIndex == -1 && str.length() > 0) {
+        char firstChar = str[0];
+        if      (firstChar == 'c') noteIndex = 0;
+        else if (firstChar == 'd') noteIndex = 2;
+        else if (firstChar == 'e') noteIndex = 4;
+        else if (firstChar == 'f') noteIndex = 5;
+        else if (firstChar == 'g') noteIndex = 7;
+        else if (firstChar == 'a') noteIndex = 9;
+        else if (firstChar == 'b') noteIndex = 11;
+    }
+    // unknown format -> security fallback
+    if (noteIndex == -1)
+        return 60;
+    // parse otave (e.g. "4" from "c4" or "-1" from "c-1")
+    int octave = str.substring (charOffset).getIntValue();
+    // in the SFZ standard, C4 typically corresponds to MIDI note 60: (octave + 1) * 12 + note
+    int midiNote = (octave + 1) * 12 + noteIndex;
+    return juce::jlimit (0, 127, midiNote);
 }
 
 
@@ -4003,7 +4771,7 @@ void AudioPluginAudioProcessor::InitSamplerParams(std::vector<std::pair<float, f
             juce::ParameterID ("SAMPLE_FILTERTYPE",1), pNameSampleFilterType,
             juce::StringArray{"lowpass", "bandpass", "highpass", "formant"}, 1));
 
-        createRandomADSR(1);
+
 
         juce::NormalisableRange<float> sampleFilterRange(20.0f, 20000.0f, 0.1f);
         auto pNameSampleFilterFreq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sample FilterFreq "));
@@ -4032,12 +4800,11 @@ void AudioPluginAudioProcessor::InitSamplerParams(std::vector<std::pair<float, f
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
         ));
 
-        createRandomADSR(2);
 
         auto pNameSampleAttackFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sample Attack Flt "));
         addParameter(samplerFilterParams.attackFilterSample = new juce::AudioParameterFloat(
             juce::ParameterID ("SAMPLE_ATTACKFLT", 1), pNameSampleAttackFlt,
-            juce::NormalisableRange<float>(0.05f, 0.2f, 0.001f, 0.5f), 0.1f*randomFloats.randA,
+            juce::NormalisableRange<float>(0.05f, 0.2f, 0.001f, 0.5f), 0.1f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -4046,7 +4813,7 @@ void AudioPluginAudioProcessor::InitSamplerParams(std::vector<std::pair<float, f
         auto pNameSampleDecayFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sample Decay Flt "));
         addParameter(samplerFilterParams.decayFilterSample = new juce::AudioParameterFloat(
             juce::ParameterID ("SAMPLE_DECAYFLT", 1), pNameSampleDecayFlt,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8f*randomFloats.randD,
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -4055,7 +4822,7 @@ void AudioPluginAudioProcessor::InitSamplerParams(std::vector<std::pair<float, f
         auto pNameSampleSustainFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sample Sustain Flt "));
         addParameter(samplerFilterParams.sustainFilterSample = new juce::AudioParameterFloat(
             juce::ParameterID ("SAMPLE_SUSTAINFLT", 1), pNameSampleSustainFlt,
-            juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 0.5f), 0.5f*randomFloats.randS,
+            juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f, 0.5f), 0.5f,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -4064,7 +4831,7 @@ void AudioPluginAudioProcessor::InitSamplerParams(std::vector<std::pair<float, f
         auto pNameSampleReleaseFlt = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sample Release Flt "));
         addParameter(samplerFilterParams.releaseFilterSample = new juce::AudioParameterFloat(
             juce::ParameterID ("SAMPLE_RELEASEFLT", 1), pNameSampleReleaseFlt,
-            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8*randomFloats.randR,
+            juce::NormalisableRange<float>(0.0f, 2.0f, 0.001f, 0.5f), 0.8,
             juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int) { return juce::String(value, 2); })
             .withValueFromStringFunction([](const juce::String& text) { return text.getFloatValue(); })
@@ -4095,6 +4862,10 @@ void AudioPluginAudioProcessor::InitSamplerParams(std::vector<std::pair<float, f
             );
         }
         samplerFilterParams.samplerAdsrFilterPtr->setGuiState(magicState);
+
+    auto pNameSamplerFilterIsActivatedParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Sampler Filter Active "));
+    addParameter(samplerFilterParams.isActivated = new juce::AudioParameterBool
+        (juce::ParameterID ("SAMPLER_FILTER_ACTIVE", 1), pNameSamplerFilterIsActivatedParam, true));
 }
 #pragma  endregion SAMPLING_METHODS
 

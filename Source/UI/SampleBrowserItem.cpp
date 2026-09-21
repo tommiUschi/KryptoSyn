@@ -3,6 +3,29 @@
 #include "SampleBrowserItem.h"
 #include "PluginProcessor.h"
 
+struct PropertySamplerBrowseListener : public juce::Value::Listener {
+    PropertySamplerBrowseListener (juce::Value v, std::function<void(const juce::var&)> callback)
+        : valueToListen (v), onChangedCallback (std::move (callback))
+    {
+        valueToListen.addListener (this);
+    }
+
+    ~PropertySamplerBrowseListener() override
+    {
+        valueToListen.removeListener (this);
+    }
+
+    void valueChanged (juce::Value& v) override
+    {
+        if (onChangedCallback)
+            onChangedCallback (v.getValue());
+    }
+
+    juce::Value valueToListen;
+    std::function<void(const juce::var&)> onChangedCallback;
+};
+
+SampleBrowserItem::~SampleBrowserItem() = default;
 SampleBrowserItem::SampleBrowserItem (foleys::MagicGUIBuilder& builder, const juce::ValueTree& node)
     : foleys::GuiItem (builder, node)
 {
@@ -31,8 +54,43 @@ SampleBrowserItem::SampleBrowserItem (foleys::MagicGUIBuilder& builder, const ju
     auto outline = outlineStr.isNotEmpty() ? juce::Colour::fromString (outlineStr) : juce::Colour (0xff00816A);
     auto arrow   = arrowStr.isNotEmpty()   ? juce::Colour::fromString (arrowStr)   : juce::Colour (0xff00e3e9);
 
-    //apply colors to the UI component
+    // apply colors to the UI component
     browserComponent.setCustomColors (bg, text, outline, arrow);
+
+    auto updateGUI = [this] (const juce::var&)
+    {
+        auto parent = getMagicState().getPropertyAsValue ("samplParentDir").toString();
+        auto instr  = getMagicState().getPropertyAsValue ("samplInstrFolder").toString();
+        auto file   = getMagicState().getPropertyAsValue ("samplFile").toString();
+
+        if (parent.isNotEmpty() && instr.isNotEmpty())
+        {
+            juce::MessageManager::callAsync ([this, parent, instr, file]()
+            {
+                // TEST: If the GUI already displays this state (because the user clicked),
+                // we and prevent the quadruple loading cascade!
+                if (browserComponent.getCurrentCategory() == parent &&
+                    browserComponent.getCurrentSubCategory() == instr &&
+                    browserComponent.getCurrentFile() == file)
+                {
+                    return;
+                }
+
+                // the UI is synchronized and audio reloaded only when loading an external preset:
+                browserComponent.selectFoldersByName (parent, instr, file, false);
+            });
+        }
+    };
+
+    // register listeners for all three variables:
+    MyPropertySamplerBrowseListener.push_back (std::make_unique<PropertySamplerBrowseListener> (
+        getMagicState().getPropertyAsValue ("samplParentDir"), updateGUI));
+
+    MyPropertySamplerBrowseListener.push_back (std::make_unique<PropertySamplerBrowseListener> (
+        getMagicState().getPropertyAsValue ("samplInstrFolder"), updateGUI));
+
+    MyPropertySamplerBrowseListener.push_back (std::make_unique<PropertySamplerBrowseListener> (
+        getMagicState().getPropertyAsValue ("samplFile"), updateGUI));
 
     addAndMakeVisible (browserComponent);
 }
@@ -40,6 +98,19 @@ SampleBrowserItem::SampleBrowserItem (foleys::MagicGUIBuilder& builder, const ju
 void SampleBrowserItem::update()
 {
     // (if the GUI layout is updated at runtime)
+    // is called when the PGM GUI layout is updated)
+    if (auto* proc = dynamic_cast<AudioPluginAudioProcessor*> (getMagicState().getProcessor()))
+    {
+        auto currentCategory   = proc->samplParentDir;
+        auto currentInstrument = proc->samplInstrFolder;
+        auto currentFile       = proc->samplFile; // retrieves the saved file name (e.g., "Guitar.sfz")
+
+        if (currentCategory.isNotEmpty() && currentInstrument.isNotEmpty())
+        {
+            // jetzt stimmen die 4 Parameter: Category, Instrument, File, triggerAudioLoad (false)
+            browserComponent.selectFoldersByName (currentCategory, currentInstrument, currentFile, false);
+        }
+    }
 }
 
 juce::Component* SampleBrowserItem::getWrappedComponent()

@@ -20,6 +20,13 @@ void SamplerVoice::startNote (int midiNoteNumber, float velocity, juce::Synthesi
         // start envelopes!:
         sampleGainAdsr.noteOn();
         sampleFilterAdsr.noteOn();
+        samplerFilter->reset();
+
+        /*std::cout << "[Voice Start] Note: " << midiNoteNumber
+          << " | Root: " << zoneSound->rootMidiNote
+          << " | Speed-Faktor: " << pitchFactor
+          << " | Buffer-Dauer (s): " << (zoneSound->audioBuffer.getNumSamples() / zoneSound->originalSampleRate)
+          << std::endl;*/
     }
     else {
         activeSound = nullptr;
@@ -28,6 +35,7 @@ void SamplerVoice::startNote (int midiNoteNumber, float velocity, juce::Synthesi
 
 void SamplerVoice::stopNote (float, bool allowTailOff)
 {
+    //std::cout << "[Voice Stop] NoteOff empfangen (allowTailOff=" << (allowTailOff ? "true" : "false") << ")" << std::endl;
     if (allowTailOff) {
         sampleGainAdsr.noteOff();
         sampleFilterAdsr.noteOff();
@@ -66,7 +74,7 @@ void SamplerVoice::prepareToPlay(double sampleRate, int samplesPerBlock, int out
     spec.sampleRate       = sampleRate;
     spec.maximumBlockSize = static_cast<uint32_t>(samplesPerBlock);
     spec.numChannels      = static_cast<uint32_t>(outputChannels);
-    currentFilterSpec = spec; // fuer spaetere Slot-Wechsel merken
+    currentFilterSpec = spec; // save for later slot changes
 
     if (samplerFilter == nullptr)
         samplerFilter = std::make_unique<FilterData>();
@@ -76,7 +84,7 @@ void SamplerVoice::prepareToPlay(double sampleRate, int samplesPerBlock, int out
 
 void SamplerVoice::setFilterType (int type)
 {
-    const bool wantFormant = (type == 3); // 3 = "formant" in deiner StringArray
+    const bool wantFormant = (type == 3); // 3 = "formant"
     const bool isFormant   = dynamic_cast<FormantFilter*> (samplerFilter.get()) != nullptr;
 
     if (wantFormant != isFormant)
@@ -150,84 +158,99 @@ void SamplerVoice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int 
     {
         const uint32_t samplesToRender = static_cast<uint32_t> (std::min (samplesRemaining, kWtBlockSize));
 
-        // ── 1. Filter-ADSR: calculate the average value for this sub-block ──
-        float filterEnvVal = 0.0f;
-        for (uint32_t s = 0; s < samplesToRender; ++s)
-            filterEnvVal += sampleFilterAdsr.getNextSample();
-        filterEnvVal /= static_cast<float> (samplesToRender);
+        if (filterIsEnabled)
+        {
+            // ── filter-ADSR: calculate the average value for this sub-block ──
+            float filterEnvVal = 0.0f;
+            for (uint32_t s = 0; s < samplesToRender; ++s)
+                filterEnvVal += sampleFilterAdsr.getNextSample();
+            filterEnvVal /= static_cast<float> (samplesToRender);
 
-        // exponential cutoff modulation (for a noticeable frequency shift)
-        float envCents = filterEnvVal * filterEnvAmount;
-        const float modFilterFreq = juce::jlimit (
-            20.0f,
-            20000.0f,
-            filterFreq * std::pow (2.0f, envCents / 1200.0f)
-        );
+            // exponential cutoff modulation (for a noticeable frequency shift)
+            float envCents = filterEnvVal * filterEnvAmount;
+            const float modFilterFreq = juce::jlimit (
+                20.0f,
+                20000.0f,
+                filterFreq * std::pow (2.0f, envCents / 1200.0f)
+            );
 
-        // Dynamic resonance modulation!
-        // the further the envelope opens, the sharper (more resonant) the filter becomes.
-        // We take the base resonance from the filter and add a portion of the envelope to it
-        const float modFilterReso = juce::jlimit
-            (1.0f,
-            10.0f,
-            filterReso + (filterEnvVal * 0.3f));
+            // Dynamic resonance modulation!
+            // the further the envelope opens, the sharper (more resonant) the filter becomes.
+            // We take the base resonance from the filter and add a portion of the envelope to it
+            const float modFilterReso = juce::jlimit
+                (1.0f,
+                10.0f,
+                filterReso + (filterEnvVal * 0.3f));
 
-        // Pass both values to the filter
-        samplerFilter->updateFilterFrequency(modFilterFreq);
-        samplerFilter->updateFilterResonance(modFilterReso);
+            // Pass both values to the filter
+            samplerFilter->updateFilterFrequency(modFilterFreq);
+            samplerFilter->updateFilterResonance(modFilterReso);
+        }
 
-        // ── 2. Internal sample loop for this sub-block ──
         for (uint32_t s = 0; s < samplesToRender; ++s)
         {
             int idxCurrent = static_cast<int> (samplePointer);
-            int idxNext = idxCurrent + 1;
 
-            // case A: The sample has reached its physical end (the one-shot is playing out)
-            if (idxCurrent < 0 || idxCurrent >= srcSamples)
+            // puffer-Ende / Looping-Behandlung
+            if (zone->isLooping && sampleGainAdsr.isActive() && zone->loopEnd > zone->loopStart)
             {
-                sampleGainAdsr.reset();
-                sampleFilterAdsr.reset();
-                clearCurrentNote();
-                activeSound = nullptr;
-                return; // Stop note completely, abort loop
+                if (idxCurrent >= zone->loopEnd)
+                {
+                    // jump seamlessly back to the loop start point
+                    float loopLen = static_cast<float> (zone->loopEnd - zone->loopStart);
+                    samplePointer -= loopLen;
+                    if (samplePointer < static_cast<float> (zone->loopStart))
+                        samplePointer = static_cast<float> (zone->loopStart);
+                    idxCurrent = static_cast<int> (samplePointer);
+                }
+            }
+            else
+            {
+                // one-shot behavior (drums/percussion) OR note released and buffer finished
+                if (idxCurrent < 0 || idxCurrent >= srcSamples)
+                {
+                    sampleGainAdsr.reset();
+                    sampleFilterAdsr.reset();
+                    clearCurrentNote();
+                    activeSound = nullptr;
+                    return; // stop voice completely
+                }
             }
 
             float gainEnv = sampleGainAdsr.getNextSample();
 
-            // case B: The volume envelope has fully decayed (tail-off complete)
+            // volume envelope has fully completed (tail-off finished)
             if (!sampleGainAdsr.isActive())
             {
                 sampleFilterAdsr.reset();
                 clearCurrentNote();
                 activeSound = nullptr;
-                return; // Stop note completely, abort loop
+                return; // stop voic
             }
 
-            float alpha = samplePointer - static_cast<float> (idxCurrent);
-            if (idxNext >= srcSamples) idxNext = idxCurrent;
+            int idxNext = idxCurrent + 1;
+            if (zone->isLooping && idxNext >= zone->loopEnd)
+                idxNext = zone->loopStart;
+            else if (idxNext >= srcSamples)
+                idxNext = idxCurrent;
 
+            float alpha = samplePointer - static_cast<float> (idxCurrent);
             float finalGain = baseGain * gainEnv;
 
-            // loop through the channels, resample, apply finalGain, and FILTER
             for (int ch = 0; ch < destChannels; ++ch)
             {
                 int srcCh = ch % srcChannels;
                 float s1 = srcBuffer.getSample (srcCh, idxCurrent);
                 float s2 = srcBuffer.getSample (srcCh, idxNext);
-
-                // calculate and scale a linearly interpolated sample
                 float sampleVal = (s1 + alpha * (s2 - s1)) * finalGain;
-
-                // now apply the filter to each sample (channel-specific!).
-                sampleVal = samplerFilter->process(sampleVal, ch);
-
-                // add to the main output buffer
+                if (filterIsEnabled)
+                {
+                    sampleVal = samplerFilter->process (sampleVal, ch);
+                }
                 outputBuffer.addSample (ch, startSample + outputOffset + s, sampleVal);
             }
-
             samplePointer += speed;
         }
-
         samplesRemaining -= static_cast<int> (samplesToRender);
         outputOffset     += static_cast<int> (samplesToRender);
     }
@@ -255,9 +278,20 @@ void SamplerVoice::updateFilterParams(const float filterFreqParam, const float f
 {
     filterFreq = filterFreqParam; filterReso = filterResoParam;
     filterEnvAmount= filtEnvAmParam;
-    ///samplerFilter.updateFilterParameters(filterFreqParam, filterResoParam);
     samplerFilter->updateFilterFrequency(filterFreqParam);
     samplerFilter->updateFilterResonance(filterResoParam);
+}
+
+
+void SamplerVoice::setFilterEnabled(const bool active)
+{
+    bool currentActivationState = active;
+    if (currentActivationState != lastFilterIsEnabled)
+    {
+        filterIsEnabled = currentActivationState;
+        samplerFilter->reset();
+    }
+    lastFilterIsEnabled = currentActivationState;
 }
 
 void SamplerVoice::updateVolumenParam(float vol)

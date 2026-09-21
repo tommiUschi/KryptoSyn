@@ -21,13 +21,10 @@ public:
 
 #ifdef _DEBUG
         baseDir = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
-        categoryBox.onChange = [this] { updateSubCategories(); };
+        categoryBox.onChange    = [this] { updateSubCategories(); };
         subCategoryBox.onChange = [this] { updateFiles(); triggerInstrumentSelection(); };
+        fileBox.onChange        = [this] { triggerInstrumentSelection(); }; // <-- NEU!
 #else
-        // !!! IMPORTANT - Swap the comments depending on whether the project is to be executed
-        // from the development environment or from the release output:
-
-        //baseDir = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
         baseDir = juce::File::getSpecialLocation(juce::File::currentExecutableFile)
             .getParentDirectory()      // Standalone
             .getParentDirectory()      // Release
@@ -35,8 +32,9 @@ public:
         if (!baseDir.exists()) {
             baseDir = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
         }
-        categoryBox.onChange = [this] { updateSubCategories(); };
+        categoryBox.onChange    = [this] { updateSubCategories(); };
         subCategoryBox.onChange = [this] { updateFiles(); triggerInstrumentSelection(); };
+        fileBox.onChange        = [this] { triggerInstrumentSelection(); }; // <-- NEU!
 #endif
     }
 
@@ -56,7 +54,7 @@ public:
 
     void setCustomColors (juce::Colour bg, juce::Colour text, juce::Colour outline, juce::Colour arrow)
     {
-        for (auto* box : { &categoryBox, &subCategoryBox})
+        for (auto* box : { &categoryBox, &subCategoryBox })
         {
             // colors for the closed box in the UI layout
             box->setColour (juce::ComboBox::backgroundColourId, bg);
@@ -86,6 +84,54 @@ public:
         }
     }
 
+    /**
+     * Sets the combo boxes to a specific category and instrument from an external source.
+     *
+     * @param categoryName name of the parent folder (e.g. “drums”)
+     * @param instrumentName name of the instrument folder (e.g., "808_Kick")
+     * @param triggerAudioLoad true = also triggers the reloading of the samples in the processor
+     *                         false = aktualisiert nur die Anzeige in der GUI (gut für Preset-Loads)
+     */
+    /**
+     * specifically sets the combo boxes to category, subfolder, and file
+     */
+    void selectFoldersByName (const juce::String& categoryName,
+                          const juce::String& instrumentName,
+                          const juce::String& fileName = {},
+                          bool triggerAudioLoad = true)
+    {
+        if (categoryBox.getNumItems() == 0)
+            updateCategories();
+
+        // only re-import if the category is actually different
+        bool catChanged = (categoryBox.getText() != categoryName);
+        if (catChanged)
+        {
+            selectBoxItemByText (categoryBox, categoryName, juce::dontSendNotification);
+            updateSubCategories();
+        }
+
+        // reload only if the subcategory or category has changed
+        bool subChanged = (subCategoryBox.getText() != instrumentName);
+        if (catChanged || subChanged)
+        {
+            selectBoxItemByText (subCategoryBox, instrumentName, juce::dontSendNotification);
+            updateFiles();
+        }
+
+        // select file in ComboBox 3
+        if (fileName.isNotEmpty())
+        {
+            selectBoxItemByText (fileBox, fileName, juce::dontSendNotification);
+        }
+
+        // only perform audio loading if explicitly requested
+        if (triggerAudioLoad)
+        {
+            triggerInstrumentSelection();
+        }
+    }
+
     void resized() override
     {
         auto bounds = getLocalBounds().reduced (5);
@@ -99,6 +145,10 @@ public:
         fileBox.setBounds (bounds.removeFromTop (boxHeight));
     }
 
+    juce::String getCurrentCategory() const    { return categoryBox.getText(); }
+    juce::String getCurrentSubCategory() const { return subCategoryBox.getText(); }
+    juce::String getCurrentFile() const        { return fileBox.getText(); }
+
 private:
     void updateFiles()
     {
@@ -110,16 +160,27 @@ private:
         auto finalDir = baseDir.getChildFile (catName).getChildFile (subName);
         int id = 1;
 
-        // here, we are looking for the actual *.wav files (findFiles) within the instrument!
-        for (const auto& entry : juce::RangedDirectoryIterator (finalDir, false, "*.wav", juce::File::findFiles))
+        // search for SFZ files (isRecursive = false for fast I/O)
+        juce::Array<juce::File> sfzFiles;
+        for (const auto& entry : juce::RangedDirectoryIterator (finalDir, false, "*.sfz", juce::File::findFiles))
         {
-            fileBox.addItem (entry.getFile().getFileName(), id++);
+            sfzFiles.add (entry.getFile());
+        }
+
+        if (!sfzFiles.isEmpty())
+        {
+            for (const auto& sfz : sfzFiles)
+                fileBox.addItem (sfz.getFileName(), id++);
+        }
+        else
+        {
+            // fallback for old WAV structure (isRecursive = false)
+            for (const auto& entry : juce::RangedDirectoryIterator (finalDir, false, "*.wav", juce::File::findFiles))
+                fileBox.addItem (entry.getFile().getFileName(), id++);
         }
 
         if (fileBox.getNumItems() > 0)
         {
-            // dontSendNotification` is sufficient here, since the grades box (Box 3)
-            // does not need to trigger any further downward cascade
             fileBox.setSelectedId (1, juce::dontSendNotification);
         }
     }
@@ -130,14 +191,13 @@ private:
         if (!baseDir.isDirectory()) return;
 
         int id = 1;
-        // rangedDirectoryIterator searches the Linux file system in a safe and modern way.
         for (const auto& entry : juce::RangedDirectoryIterator (baseDir, false, "*", juce::File::findDirectories))
         {
             categoryBox.addItem (entry.getFile().getFileName(), id++);
         }
 
         if (categoryBox.getNumItems() > 0)
-            categoryBox.setSelectedId (1);
+            categoryBox.setSelectedId (1, juce::dontSendNotification);
     }
 
     void updateSubCategories()
@@ -148,29 +208,79 @@ private:
 
         auto catDir = baseDir.getChildFile (catName);
         int id = 1;
+
         for (const auto& entry : juce::RangedDirectoryIterator (catDir, false, "*", juce::File::findDirectories))
         {
-            subCategoryBox.addItem (entry.getFile().getFileName(), id++);
+            auto dirName = entry.getFile().getFileName();
+
+            // IMPORTANT: Ignore technical SFZ folders and hidden folders!
+            if (dirName.equalsIgnoreCase ("samples") ||
+                dirName.equalsIgnoreCase ("include") ||
+                dirName.startsWith ("."))
+            {
+                continue;
+            }
+
+            subCategoryBox.addItem (dirName, id++);
         }
 
         if (subCategoryBox.getNumItems() > 0)
         {
-            subCategoryBox.setSelectedId (1, juce::sendNotification);
+            subCategoryBox.setSelectedId (1, juce::dontSendNotification);
         }
+    }
+
+    bool selectBoxItemByText (juce::ComboBox& box,
+                              const juce::String& textToFind,
+                              juce::NotificationType notification)
+    {
+        for (int i = 0; i < box.getNumItems(); ++i)
+        {
+            if (box.getItemText (i) == textToFind)
+            {
+                box.setSelectedId (box.getItemId (i), notification);
+                return true;
+            }
+        }
+        return false;
     }
 
     void triggerInstrumentSelection()
     {
-        auto instrumentName = subCategoryBox.getText();
-        if (instrumentName.isEmpty() || onInstrumentSelected == nullptr) return;
+        auto catName  = categoryBox.getText();
+        auto subName  = subCategoryBox.getText();
+        auto fileName = fileBox.getText();
 
-        auto instrumentDir = baseDir.getChildFile (categoryBox.getText())
-                                    .getChildFile (instrumentName);
+        if (catName.isEmpty() || subName.isEmpty() || fileName.isEmpty() || onInstrumentSelected == nullptr)
+            return;
 
-        if (instrumentDir.isDirectory())
+        auto subDir = baseDir.getChildFile (catName).getChildFile (subName);
+
+        // if an .sfz file is selected in fileBox:
+        if (fileName.endsWithIgnoreCase (".sfz"))
         {
-            // triggers the callback to the processor
-            onInstrumentSelected (instrumentDir);
+            auto sfzFile = subDir.getChildFile (fileName);
+            if (sfzFile.existsAsFile())
+            {
+                onInstrumentSelected (sfzFile);
+                return;
+            }
+
+            // case-insensitive fallback search on Linux
+            for (const auto& entry : juce::RangedDirectoryIterator (subDir, true, "*.sfz", juce::File::findFiles))
+            {
+                if (entry.getFile().getFileName().equalsIgnoreCase (fileName))
+                {
+                    onInstrumentSelected (entry.getFile());
+                    return;
+                }
+            }
+        }
+
+        // if it is an old WAV folder:
+        if (subDir.isDirectory())
+        {
+            onInstrumentSelected (subDir);
         }
     }
     juce::File baseDir;

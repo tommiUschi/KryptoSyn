@@ -27,6 +27,7 @@
 #include "Components/CustomMouseComponent.h"
 #include "Helpers/PixelFIFO.h"
 #include "Helpers/CBuffer.h"
+#include <algorithm>
 #include "Helpers/FileHandling.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -35,12 +36,19 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "pluginterfaces/base/futils.h"
 #include "Helpers/GuiUtils.h"
-#include "juce_gui_basics/native/juce_XWindowSystem_linux.h"
+#include <map>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <thread>
+#include <atomic>
 
 #pragma region STRUCTS_AND_STUFF
 struct PropertyLambdaListener;
 struct PropertyActiveListener;
 struct PropertySamplerListener;
+struct PropertySynthFilterActiveListener;
+struct PropertySamplerFilterListener;
 struct PropertyEffectsListener;
 struct PropertyButtonListener;
 struct PropertyTutorialListener;
@@ -51,6 +59,7 @@ struct PropertyMinusButListener;
 struct PropertyAnalysButListener;
 struct PropertyGainFilterListener;
 struct PropertyKeybBigSmallListener;
+struct PropertySamplerBrowseListener;
 struct PixelUpdate;
 class PropertySpectroListener : public juce::Value::Listener
 {
@@ -140,6 +149,66 @@ private:
 };
 #pragma endregion GUI_HELPER_CLASSES
 
+#pragma region SFZ_PARSER
+struct SfzOpcode
+{
+    juce::String key;
+    juce::String value;
+};
+
+// extracts SFZ key-value pairs (e.g., sample=Piano 1/c3.wav key=c3), even with spaces in paths
+static juce::Array<SfzOpcode> parseSfzLineOpcodes (const juce::String& line)
+{
+    juce::Array<SfzOpcode> opcodes;
+
+    juce::Array<int> eqIndices;
+    int searchIdx = 0;
+    while ((searchIdx = line.indexOfChar (searchIdx, '=')) != -1)
+    {
+        eqIndices.add (searchIdx);
+        searchIdx++;
+    }
+
+    if (eqIndices.isEmpty()) return opcodes;
+
+    for (int i = 0; i < eqIndices.size(); ++i)
+    {
+        int eqIdx = eqIndices[i];
+
+        // key-Name vor '=' rückwärts ermitteln
+        int keyStart = eqIdx - 1;
+        while (keyStart >= 0 && (juce::CharacterFunctions::isLetterOrDigit (line[keyStart]) || line[keyStart] == '_' || line[keyStart] == '#'))
+        {
+            keyStart--;
+        }
+        keyStart++;
+
+        juce::String key = line.substring (keyStart, eqIdx).trim();
+        if (key.isEmpty()) continue;
+
+        // determine the value following '=' (up to the next key before the next '=', or until the end of the line)
+        int valStart = eqIdx + 1;
+        int valEnd = line.length();
+
+        if (i + 1 < eqIndices.size())
+        {
+            int nextEqIdx = eqIndices[i + 1];
+            int nextKeyStart = nextEqIdx - 1;
+            while (nextKeyStart >= valStart && (juce::CharacterFunctions::isLetterOrDigit (line[nextKeyStart]) || line[nextKeyStart] == '_' || line[nextKeyStart] == '#'))
+            {
+                nextKeyStart--;
+            }
+            valEnd = nextKeyStart + 1;
+        }
+
+        juce::String value = line.substring (valStart, valEnd).trim();
+        opcodes.add ({ key, value });
+    }
+
+    return opcodes;
+}
+#pragma endregion SFZ_PARSER
+
 class AudioPluginAudioProcessor : public foleys::MagicProcessor, public juce::ChangeBroadcaster, private juce::Timer
 {
 public:
@@ -202,13 +271,73 @@ public:
     void setExplicitGuiSize(float factor);
     // ================================================================================
     juce::ValueTree keyBoardNode;
-    juce::ValueTree guiTreeKeyBoard;// = magicState.getGuiTree();
+    juce::ValueTree guiTreeKeyBoard;
     foleys::GuiItem* keyboardItem;
     juce::MidiKeyboardComponent* keyboardComp;
     void ChangeKeyBoard();
     // === Sampling ===================================================================
     // The loading method triggered by the PGM item is not related to the 4 WaveTableOSCs
-    void loadSampleFromFile (const juce::File& instrumentFolder);
+    void loadSampleFromFile (const juce::File& sampleSource);
+    juce::String samplParentDir, samplInstrFolder;
+    juce::File getSampleBaseDir() const;
+    juce::String samplFile;
+    //__________________________________________________
+    // helper function: Finds files on Linux, ignoring case and backslashes
+    static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
+    {
+        juce::String cleanPath = relativePath.replaceCharacter ('\\', '/').trim();
+        if (cleanPath.isEmpty()) return {};
+
+        juce::File direct = root.getChildFile (cleanPath);
+        if (direct.existsAsFile())
+            return direct;
+
+        juce::StringArray components;
+        components.addTokens (cleanPath, "/", "");
+
+        juce::File current = root;
+        for (const auto& comp : components)
+        {
+            if (comp.isEmpty() || comp == ".") continue;
+            if (comp == "..") { current = current.getParentDirectory(); continue; }
+
+            juce::File exactChild = current.getChildFile (comp);
+            if (exactChild.exists())
+            {
+                current = exactChild;
+            }
+            else
+            {
+                bool found = false;
+                for (const auto& entry : juce::RangedDirectoryIterator (current, false, "*", juce::File::findFilesAndDirectories))
+                {
+                    if (entry.getFile().getFileName().equalsIgnoreCase (comp))
+                    {
+                        current = entry.getFile();
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) return {};
+            }
+        }
+        return current.existsAsFile() ? current : juce::File();
+    }
+
+    // struct for the clean encapsulation of zone parameters
+    struct SfzParseState
+    {
+        int rootNote = 60;
+        int loKey = 0;
+        int hiKey = 127;
+        float volumeDb = 0.0f;
+        juce::String defaultPath = "";
+
+        // SFZ looping-Parameters:
+        bool isLooping = false;
+        int loopStart = 0;
+        int loopEnd = 0;
+    };
     //================================================================================
     void initialiseBuilder (foleys::MagicGUIBuilder& builder) override
     {// customized components and LoolAndFeels
@@ -230,7 +359,6 @@ public:
         builder.registerLookAndFeel("customLNF", std::move(customLNF));
         builder.registerLookAndFeel("CustomLNFButton", std::move(customButtonLNF));
         builder.registerLookAndFeel("CustomSwitchButton", std::move(customButtonSwitch));
-        //builder.registerLookAndFeel("CustomNavLNFButton", std::move(customNavButtonLNF));
         builder.registerLookAndFeel("CustomLedLNF", std::move(lookAndFeelLed));
         builder.registerLookAndFeel("AbsynthTitelLookAndFeel", std::move(lookAndFeelTitle));
         builder.registerFactory ("SpectrogramMatrix", &SpectrogramMatrixItem::factory);
@@ -254,6 +382,8 @@ private:
     std::vector<std::unique_ptr<PropertyAnalysButListener>> MyPropertyAnalysButListeners;
     std::vector<std::unique_ptr<PropertyGainFilterListener>> MyPropertyGainFilterListeners;
     std::vector<std::unique_ptr<PropertyKeybBigSmallListener>> MyPropertyKeybBigSmallListeners;
+    std::vector<std::unique_ptr<PropertySamplerFilterListener>> MyPropertySamplerFilterListeners;
+    std::vector<std::unique_ptr<PropertySynthFilterActiveListener>> MyPropertySynthFilterActiveListeners;
 #pragma endregion LAMBDA_METHODS
 
 #pragma region TEXT_EDITOR
@@ -350,10 +480,12 @@ private:
     void InitJuceWtFilterParameters();
     void InitializeWTOscTriggers();
     void InitializeGainFilterTriggers();
+    void InitializeSynthFilterActiveTriggers();
     void InitializeKeybBigSmallTriggers();
     void InitializeAnalysTrigger();
     void InitializeModActiveTriggers();
     void InitializeSamplerActiveTriggers();
+    void InitializeSamplerFilterActiveTriggers();
     void InitializeEffectsTriggers();
     void InitializeTutWindowTriggers();
     void InitializeLicenseWindowTriggers();
@@ -436,11 +568,20 @@ private:
         juce::AudioParameterFloat* decayFilterSample = nullptr;
         juce::AudioParameterFloat* sustainFilterSample = nullptr;
         juce::AudioParameterFloat* releaseFilterSample = nullptr;
+        juce::AudioParameterBool* isActivated = nullptr;
         ADSRPlot* samplerAdsrFilterPtr = nullptr;
     };
     SamplerFilterParams samplerFilterParams;
     juce::AudioBuffer<float> samplerScratchBuffer;
-    //================  nnd sampling =====================================================
+    int parseSfzNote (const juce::String& noteStr);
+    std::atomic<bool> isLoadingSample { false };
+    std::thread sampleLoadingThread;
+    // background worker for the actual file I/O
+    void loadSampleSourceInBackground (const juce::File& sampleSource);
+    // the SFZ parser writes directly to the passed array
+    void loadSfzPresetToBuffer (const juce::File& sfzFile,
+                                juce::Array<juce::SynthesiserSound::Ptr>& targetArray);
+    //================  end sampling =====================================================
     //======================================================================================
 #pragma endregion SAMPLING
 
@@ -489,7 +630,6 @@ private:
         juce::AudioParameterFloat* tuneWTParams = nullptr;
         juce::AudioParameterFloat* panWTParams = nullptr;
         juce::AudioParameterFloat* reserveWTParams = nullptr;
-        juce::AudioParameterBool* isCurrentlySetted = nullptr;
         juce::AudioParameterBool* isActivated = nullptr;
 
         juce::AudioParameterChoice* filterTypeParam = nullptr;
@@ -500,6 +640,7 @@ private:
         juce::AudioParameterFloat* sustainFilterParam = nullptr;
         juce::AudioParameterFloat* releaseFilterParam = nullptr;
         juce::AudioParameterFloat* filterEnvelopeAmount = nullptr;
+        juce::AudioParameterBool* filterIsActivated = nullptr;
 
         ADSRPlot* adsrWtPtr = nullptr;
     };
@@ -550,23 +691,20 @@ private:
     }; LfoMasterModulat lfoMastModParam;
     juce::AudioParameterBool* glitchActiveParam = nullptr;
     //==========================================================================================
-    // output envelope
-    void applyNotesMainAdsr(const juce::MidiBuffer& samplerMidiMessages);
-    struct SynthLabMainParams
-    {
-        juce::AudioParameterFloat* attackMain = nullptr;
-        juce::AudioParameterFloat* decayMain = nullptr;
-        juce::AudioParameterFloat* sustainMain = nullptr;
-        juce::AudioParameterFloat* releaseMain = nullptr;
-        ADSRPlot* mainAdsrMasterPtr = nullptr;
-    };
-    SynthLabMainParams synthMainParams;
-    AdsrData mainGainAdsr;
+    juce::AudioBuffer<float> zeroBuffer;
+    // 4 buffers for the individual wavetable oscillators (meters 1-4)
+    std::array<juce::AudioBuffer<float>, 4> wtMeterSum;
     // note-counter:
     int activeNoteCount { 0 };
     juce::AudioParameterBool* bothAnalysersActiveParam = nullptr;
-    // buffer for silence
-    juce::AudioBuffer<float> zeroBuffer;
+    Lfos lfoFmDataMaster, lfoAmDataMaster;
+    juce::AudioParameterFloat* fmFreqMaster = nullptr;
+    juce::AudioParameterFloat* fmDepthMaster = nullptr;
+    juce::AudioParameterFloat* amFreqMaster = nullptr;
+    juce::AudioParameterFloat* amDepthMaster = nullptr;
+    juce::AudioParameterChoice* lfoFmWaveFormParamMaster = nullptr;
+    juce::AudioParameterChoice* lfoAmWaveFormParamMaster = nullptr;
+
 #pragma endregion MASTER
 
 #pragma region GUI
@@ -649,6 +787,9 @@ private:
     void updatePresetList();
     juce::String currentFactoryFileName = {""};
     void cyclePreset (int direction);
+    void loadMostRecentPreset();
+    void selectPresetByIndex (int index);
+    juce::File newestPreset;
     //= end serialization =====================================
 #pragma endregion SERIALIZATION_DECL
 
@@ -656,7 +797,7 @@ private:
     void updateLabelColor(const juce::String& elementId, const juce::String& hexColorWithAlpha);
     static juce::ValueTree findNodeById(juce::ValueTree tree, const juce::String& targetId);
 
-    static constexpr int maxVoices = 16; //we determine: 16 voices
+    static constexpr int maxVoices = 32; //we determine: 16 voices
     juce::Synthesiser synth;
     // an array that holds only the pointers to the specific voices:
     juce::Array<SynthVoice*> myVoices;
@@ -668,25 +809,13 @@ private:
     std::unique_ptr<WindowSizeLocker> sizeLocker;
     juce::Component::SafePointer<juce::DocumentWindow> standaloneWindow;
 
-    juce::Random randomGenerator;
-    juce::Random randomGeneratorOscShape;
-    struct RandomFloats {
-        float randA = 0.0f;
-        float randD = 0.0f;
-        float randS = 0.0f;
-        float randR = 0.0;
-    };
-    RandomFloats randomFloats;
-    void createRandomADSR(int index);
-    float createFloatForOscShape(int index);
-
     int _counterOscWt1 = {0};
     int _counterOscWt2 = {0};
     int limit_counter = {5};
     bool switchTimerBreak = false;
     int lastSamplerFilterType = {0};
     int lastModFilterType = {1};
-    // Status tracking for edge detection (On -> Off):
+    // status tracking for edge detection (On -> Off):
     bool wasAnalyserActive = false;
     int silenceBlocksToPush = 0;
     //

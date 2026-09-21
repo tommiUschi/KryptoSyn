@@ -32,7 +32,6 @@ public:
     SamplerZoneSound (int rootNote, juce::AudioBuffer<float>&& bufferToTake, double sampleRate)
         : rootMidiNote (rootNote), audioBuffer (std::move (bufferToTake)), originalSampleRate (sampleRate) {}
 
-    // JUCE checks this automatically before playback!:
     bool appliesToNote (int midiNoteNumber) override
     {
         return midiNoteNumber >= minMidiNote && midiNoteNumber <= maxMidiNote;
@@ -41,10 +40,16 @@ public:
     bool appliesToChannel (int) override { return true; }
 
     int rootMidiNote;
-    int minMidiNote = 0;   // lower limit for this zone
-    int maxMidiNote = 127; // upper limit for this zone
+    int minMidiNote = 0;
+    int maxMidiNote = 127;
     juce::AudioBuffer<float> audioBuffer;
     double originalSampleRate;
+
+    // loop properties:
+    bool isLooping = false;
+    int loopStart = 0;
+    int loopEnd = 0;
+
     using Ptr = juce::ReferenceCountedObjectPtr<SamplerZoneSound>;
 };
 
@@ -62,6 +67,7 @@ public:
     //
 
     void updateFilterParams (float filterFreqParam, float filterResoParam, float filtEnvAmParam);
+    void setFilterEnabled(bool active);
     void updateVolumenParam(float vol);
 
     bool canPlaySound (juce::SynthesiserSound* sound) override
@@ -83,6 +89,8 @@ private:
     std::unique_ptr<FilterBase> samplerFilter;
     AdsrData sampleGainAdsr;
     AdsrData sampleFilterAdsr;
+    bool filterIsEnabled = {true};
+    bool lastFilterIsEnabled = {true};
     float filterFreq = {0.0f};
     float filterReso = {0.0f};
     float filterEnvAmount = {0.0f};

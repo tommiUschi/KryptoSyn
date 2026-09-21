@@ -10,16 +10,19 @@
 /**
  * class SampleBrowserItem is needed for SampleBrowser component on the sampler page
  */
+struct PropertySamplerBrowseListener;
 class SampleBrowserItem : public foleys::GuiItem
 {
 public:
     FOLEYS_DECLARE_GUI_FACTORY (SampleBrowserItem)
 
     SampleBrowserItem (foleys::MagicGUIBuilder& builder, const juce::ValueTree& node);
+    ~SampleBrowserItem() override;
 
     void update() override;
     juce::Component* getWrappedComponent() override;
 
 private:
     SampleBrowserComponent browserComponent;
+    std::vector<std::unique_ptr<PropertySamplerBrowseListener>> MyPropertySamplerBrowseListener;
 };

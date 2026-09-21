@@ -51,6 +51,7 @@
         void updateAmParams(float amFreqParam, float amDepthParam, int indexos);
         void updateFilterParams(float filterFreqParam, float filterResoParam, float filtEnvAmParam, int indexos);
         void setWtActive(int index, bool active);
+        void setFilterEnabled(int index, bool active);
 
         const juce::AudioBuffer<float>& getWtMeterBuffer(int index) const {
             return wtMeterBuffers[index];
@@ -61,7 +62,8 @@
                 baseTune[ind] = tune;
         }
         void setLfoActive(const int index, const bool active) { lfoActive[index] = active; }
-        //void setWtActive(const int index, const bool active) { /*wtActive[index]  = active; */}
+        void prepare (double sampleRate, int maxBlockSize, int outputChannels);
+        void setMasterFmCents(float cents) { masterFmCents = cents; }
 
     private:
         std::shared_ptr<SynthLab::MidiInputData> midiData;
@@ -70,7 +72,7 @@
         std::array<std::shared_ptr<SynthLab::WTOscillator>, 4> wtOscillators;
         juce::AudioBuffer<float> synthBuffer; // a local buffer for this voice
         juce::AudioBuffer<float> mixBuffer;    // Collect all 7 oscillators
-
+        float masterFmCents = 0.0f;
         // the baseTune array is necessary so that the FM modulation is always relative to the
         // operates using the set tune value (and does not permanently shift it):
         std::array<float, 4> baseTune = {0.0f, 0.0f, 0.0f, 0.0f}; // basic-fineDetune
@@ -100,9 +102,10 @@
         std::array<float, 4> filterFreq = {0.0f, 0.0f, 0.0f};
         std::array<float, 4> filterReso = {0.0f, 0.0f, 0.0f};
         std::array<float, 4> filterEnvAmount = {0.0f, 0.0f, 0.0f};
-
         std::array<bool, 6> lfoActive = {true, true, true, true, true, true};
         std::array<bool, 4> wtActive  = {true, true, true, true};
+        std::array<bool, 4> filterIsEnabled  = {true, true, true, true};
+        std::array<bool, 4> lastFiterIsEnabled  = {true, true, true, true};
         //==============================================================================
         // sine wave: return std::sin(x);
         // saw wave: return x / juce::MathConstants<float>::pi;
