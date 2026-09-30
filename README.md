@@ -38,7 +38,7 @@ such as those found in the 'G-Town Church Sampling Projects' package.
 
 Regarding this, please note the following:
 
-[KryptoSyn Screenshot7](docs/sampleTut.png)
+[KryptoSyn Screenshot9](docs/sampleTut.png)
 
 ## Features
 
