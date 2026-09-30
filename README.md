@@ -19,7 +19,7 @@ VST3/Standalone plugin, built with `JUCE` and the `SynthLab engine`, and `foleys
 
 and there is a new module:
 
-[KryptoSyn Screenshot7](docs/page8.png) :
+[KryptoSyn Screenshot8](docs/page8.png) :
 
 -> for example, if you are in Syntlab-Morphing-Mode for a WaveTable, you can shift the 'Morph'-
   Parameter. This creats a nice Sound
