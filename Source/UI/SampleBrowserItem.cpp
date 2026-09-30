@@ -35,7 +35,6 @@ SampleBrowserItem::SampleBrowserItem (foleys::MagicGUIBuilder& builder, const ju
         // use the correct variable name (onInstrumentSelected)
         browserComponent.onInstrumentSelected = [proc](const juce::File& instrumentFolder)
         {
-            // tnow triggers the debug output in the processor
             proc->loadSampleFromFile (instrumentFolder);
         };
     }

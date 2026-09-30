@@ -76,8 +76,13 @@ target_sources(Kryptosync PRIVATE
 		Source/Helpers/GuiUtils.cpp
 		Source/Helpers/FileHandling.h
 		Source/Helpers/FileHandling.cpp
+		Source/Helpers/SfzFileFilter.h
 		Source/UI/HelpTextItem.cpp
 		Source/UI/HelpTextItem.h
+		Source/UI/DynamicLabelItem.cpp
+		Source/UI/DynamicLabelItem.h
+		Source/UI/ParameterValueLabelItem.cpp
+		Source/UI/ParameterValueLabelItem.h
 )
 
 # package resources into BinaryData (compiled directly into the binary for the release)

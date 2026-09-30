@@ -66,6 +66,7 @@
         void setMasterFmCents(float cents) { masterFmCents = cents; }
 
     private:
+        void setCurrentCustomPlaybackSampleRate (const double newRate);
         std::shared_ptr<SynthLab::MidiInputData> midiData;
         std::shared_ptr<SynthLab::WavetableDatabase> _db;
         std::array<std::shared_ptr<SynthLab::WTOscParameters>, 4> wtParams;

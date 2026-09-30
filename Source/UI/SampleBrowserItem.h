@@ -22,6 +22,8 @@ public:
     void update() override;
     juce::Component* getWrappedComponent() override;
 
+
+
 private:
     SampleBrowserComponent browserComponent;
     std::vector<std::unique_ptr<PropertySamplerBrowseListener>> MyPropertySamplerBrowseListener;

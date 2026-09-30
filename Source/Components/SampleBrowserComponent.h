@@ -5,6 +5,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_core/juce_core.h>
 #include <functional>
+#include "../Helpers/SfzFileFilter.h"
 
 /**
  * custom component to filebrowsing for the sampler page
@@ -19,8 +20,9 @@ public:
         addAndMakeVisible (subCategoryBox);
         addAndMakeVisible (fileBox);
 
+        juce::String hardCodedPath = "/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/";
 #ifdef _DEBUG
-        baseDir = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
+        baseDir = juce::File (hardCodedPath);
         categoryBox.onChange    = [this] { updateSubCategories(); };
         subCategoryBox.onChange = [this] { updateFiles(); triggerInstrumentSelection(); };
         fileBox.onChange        = [this] { triggerInstrumentSelection(); }; // <-- NEU!
@@ -30,8 +32,24 @@ public:
             .getParentDirectory()      // Release
             .getChildFile("SynthLabSamples");
         if (!baseDir.exists()) {
-            baseDir = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
+            baseDir = juce::File (hardCodedPath);
         }
+        juce::String configFilePath = baseDir.getFullPathName();
+        // EINMALIGES Laden der Ignore-Liste beim Erstellen der Komponente:
+        juce::File configFile = baseDir.getChildFile (configFilePath+"/sfz_ignore.txt");
+        if (!sfzFilter.loadIgnoreListFromFile (configFile))
+        {
+            // Fallback-Regeln, falls Datei nicht existiert:
+            sfzFilter.addRule ("*.inc.sfz");
+            sfzFilter.addRule ("*_header.sfz");
+            sfzFilter.addRule ("*_opcodes.sfz");
+            sfzFilter.addRule ("*_Master.sfz");
+            sfzFilter.addRule ("*-keyswitch.sfz");
+            sfzFilter.addRule ("*_midi_cc_setup.sfz");
+            sfzFilter.addRule ("*_.sfzh");
+            sfzFilter.addRule ("/data/*");
+        }
+
         categoryBox.onChange    = [this] { updateSubCategories(); };
         subCategoryBox.onChange = [this] { updateFiles(); triggerInstrumentSelection(); };
         fileBox.onChange        = [this] { triggerInstrumentSelection(); }; // <-- NEU!
@@ -158,27 +176,33 @@ private:
         if (catName.isEmpty() || subName.isEmpty()) return;
 
         auto finalDir = baseDir.getChildFile (catName).getChildFile (subName);
-        int id = 1;
+        if (!finalDir.isDirectory()) return;
 
-        // search for SFZ files (isRecursive = false for fast I/O)
+        int id = 1;
         juce::Array<juce::File> sfzFiles;
+        // Ordner nach SFZ-Dateien durchsuchen
         for (const auto& entry : juce::RangedDirectoryIterator (finalDir, false, "*.sfz", juce::File::findFiles))
         {
-            sfzFiles.add (entry.getFile());
+            juce::File file = entry.getFile();
+            // Filter anwenden: 'baseDir' als Wurzel übergeben (oder weglassen)
+            if (sfzFilter.shouldIgnore (file, baseDir))
+            {
+                continue; // Include-, Header- oder ungültige SFZ-Dateien überspringen
+            }
+            sfzFiles.add (file);
         }
-
-        if (!sfzFiles.isEmpty())
-        {
+        // Gefundene saubere SFZ-Dateien in die ComboBox füllen
+        if (!sfzFiles.isEmpty()) {
             for (const auto& sfz : sfzFiles)
+            {
                 fileBox.addItem (sfz.getFileName(), id++);
+            }
         }
-        else
-        {
-            // fallback for old WAV structure (isRecursive = false)
+        else {
+            // Fallback für alte WAV-Ordnerstruktur
             for (const auto& entry : juce::RangedDirectoryIterator (finalDir, false, "*.wav", juce::File::findFiles))
                 fileBox.addItem (entry.getFile().getFileName(), id++);
         }
-
         if (fileBox.getNumItems() > 0)
         {
             fileBox.setSelectedId (1, juce::dontSendNotification);
@@ -283,6 +307,8 @@ private:
             onInstrumentSelected (subDir);
         }
     }
+
+    SfzFileFilter sfzFilter;
     juce::File baseDir;
     juce::ComboBox categoryBox;
     juce::ComboBox subCategoryBox;

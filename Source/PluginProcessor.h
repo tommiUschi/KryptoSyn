@@ -10,6 +10,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <foleys_gui_magic/foleys_gui_magic.h>
 #include "../SDKs/SynthLab/source/synthengine.h"
+#include "../SDKs/SynthLab/source/synthbase.h"
 #include "Assets/BinaryData.h"
 #include "UI/ADSRPlot.h"
 #include "UI/AbsynthTabLookAndFeel.h"
@@ -23,10 +24,13 @@
 #include "UI/SpectrogramMatrixItem.h"
 #include "UI/SampleBrowserItem.h"
 #include "UI/HelpTextItem.h"
+#include "UI/DynamicLabelItem.h"
+#include "UI/ParameterValueLabelItem.h"
 #include "Data/MasterEQ.h"
 #include "Components/CustomMouseComponent.h"
 #include "Helpers/PixelFIFO.h"
 #include "Helpers/CBuffer.h"
+#include "Helpers/SfzFileFilter.h"
 #include <algorithm>
 #include "Helpers/FileHandling.h"
 #include <X11/Xlib.h>
@@ -60,6 +64,9 @@ struct PropertyAnalysButListener;
 struct PropertyGainFilterListener;
 struct PropertyKeybBigSmallListener;
 struct PropertySamplerBrowseListener;
+struct ParameterVarLambdaListener;
+struct PropertyLfoModulCoreActiveListener;
+struct ParameterDepthLambdaListener;
 struct PixelUpdate;
 class PropertySpectroListener : public juce::Value::Listener
 {
@@ -283,7 +290,7 @@ public:
     juce::String samplFile;
     //__________________________________________________
     // helper function: Finds files on Linux, ignoring case and backslashes
-    static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
+    /*static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
     {
         juce::String cleanPath = relativePath.replaceCharacter ('\\', '/').trim();
         if (cleanPath.isEmpty()) return {};
@@ -322,7 +329,82 @@ public:
             }
         }
         return current.existsAsFile() ? current : juce::File();
+    }*/
+static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
+{
+    // 1. Normalisieren: Backslashes umwandeln und Trimmen
+    juce::String cleanPath = relativePath.replaceCharacter ('\\', '/').trim();
+    if (cleanPath.isEmpty())
+        return {};
+
+    // 2. Absolute Pfade abfangen (über statische JUCE-Funktion)
+    if (juce::File::isAbsolutePath (cleanPath))
+    {
+        juce::File directFile (cleanPath);
+        if (directFile.existsAsFile())
+            return directFile;
+
+        // Falls absoluter Pfad ungültig ist (z. B. fremde Laufwerksbuchstaben C:\...),
+        // nutzen wir nur den Dateinamen für die spätere Relativsuche weiter.
+        cleanPath = directFile.getFileName();
     }
+
+    // 3. Führende Slashes entfernen, damit 'root' bei getChildFile nicht ignoriert wird
+    while (cleanPath.startsWithChar ('/'))
+        cleanPath = cleanPath.substring (1);
+
+    if (cleanPath.isEmpty())
+        return {};
+
+    // 4. Schnellpfad: Exakte Übereinstimmung relativ zu root
+    juce::File direct = root.getChildFile (cleanPath);
+    if (direct.existsAsFile())
+        return direct;
+
+    // 5. Pfad-Komponenten zerlegen
+    juce::StringArray components;
+    components.addTokens (cleanPath, "/", "");
+
+    juce::File current = root;
+
+    for (const auto& comp : components)
+    {
+        if (comp.isEmpty() || comp == ".")
+            continue;
+
+        if (comp == "..")
+        {
+            current = current.getParentDirectory();
+            continue;
+        }
+
+        // Exakten Treffer für die aktuelle Ebene prüfen
+        juce::File exactChild = current.getChildFile (comp);
+        if (exactChild.exists())
+        {
+            current = exactChild;
+        }
+        else
+        {
+            // Case-Insensitive Suche im aktuellen Verzeichnis
+            bool found = false;
+            for (const auto& entry : juce::RangedDirectoryIterator (current, false, "*", juce::File::findFilesAndDirectories))
+            {
+                if (entry.getFile().getFileName().equalsIgnoreCase (comp))
+                {
+                    current = entry.getFile();
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+                return {}; // Pfadebene existiert nicht
+        }
+    }
+
+    return current.existsAsFile() ? current : juce::File();
+}
 
     // struct for the clean encapsulation of zone parameters
     struct SfzParseState
@@ -363,8 +445,10 @@ public:
         builder.registerLookAndFeel("AbsynthTitelLookAndFeel", std::move(lookAndFeelTitle));
         builder.registerFactory ("SpectrogramMatrix", &SpectrogramMatrixItem::factory);
         builder.registerFactory ("HelpTextItem", &HelpTextItem::factory);
+        builder.registerFactory ("DynamicLabelItem", &DynamicLabelItem::factory);
         builder.registerFactory ("OutputSpectrogramItem", &OutputSpectrogramItem::factory);
         builder.registerFactory ("SampleBrowser", &SampleBrowserItem::factory);
+        builder.registerFactory ("ParameterValueLabelItem", &ParameterValueLabelItem::factory);
     }
 private:
 #pragma region LAMBDA_METHODS
@@ -384,6 +468,9 @@ private:
     std::vector<std::unique_ptr<PropertyKeybBigSmallListener>> MyPropertyKeybBigSmallListeners;
     std::vector<std::unique_ptr<PropertySamplerFilterListener>> MyPropertySamplerFilterListeners;
     std::vector<std::unique_ptr<PropertySynthFilterActiveListener>> MyPropertySynthFilterActiveListeners;
+    std::vector<std::unique_ptr<ParameterVarLambdaListener>> MyParameterVarLambdaListeners;
+    std::vector<std::unique_ptr<PropertyLfoModulCoreActiveListener>> MyPropertyLfoModulCoreActiveListeners;
+    std::vector<std::unique_ptr<ParameterDepthLambdaListener>> MyParameterDepthLambdaListeners;
 #pragma endregion LAMBDA_METHODS
 
 #pragma region TEXT_EDITOR
@@ -478,6 +565,7 @@ private:
     void InitLfoParameters();
     void InitMasterModualtionParams();
     void InitJuceWtFilterParameters();
+    void InitLfoModeParameters();
     void InitializeWTOscTriggers();
     void InitializeGainFilterTriggers();
     void InitializeSynthFilterActiveTriggers();
@@ -486,14 +574,17 @@ private:
     void InitializeModActiveTriggers();
     void InitializeSamplerActiveTriggers();
     void InitializeSamplerFilterActiveTriggers();
+    void InitializeLfoModuleCoreActiveTriggers();
     void InitializeEffectsTriggers();
     void InitializeTutWindowTriggers();
     void InitializeLicenseWindowTriggers();
     void InitializeSpectroTriggers();
+    void InitDynamicLabelsTriggers();
+    void InitDynamicLabelsDepthTriggers();
     void InitParamsMasterSound(const std::vector<std::pair<float, float>> controlPointsParam);
     void InitSpectroParameters(const std::vector<std::pair<float, float>> controlPointsParam);
     void InitSamplerParams(std::vector<std::pair<float, float>> controlPointsParam);
-    void InitParamsWToscs(std::vector<std::pair<float, float>> controlPointsParam);
+    void InitParamsWToscs(const std::vector<std::pair<float, float>>& controlPointsParam, const juce::StringArray& realWaveNames);
 #pragma  endregion INIT
 
 #pragma region SPECTROGRAMM
@@ -586,6 +677,20 @@ private:
 #pragma endregion SAMPLING
 
 #pragma region LFO_UND_FILTER
+    // Lfos for the mode/knob modulation
+    std::array<std::array<Lfos, 4>, 4> lfosModuleCore;
+    struct LfoModeParameters
+    {
+        juce::AudioParameterChoice* lfoModeWaveFormParam = nullptr;
+        juce::AudioParameterFloat* lfoMode1FrequencyParam = nullptr;
+        juce::AudioParameterFloat* lfoMode2FrequencyParam = nullptr;
+        juce::AudioParameterFloat* lfoMode3FrequencyParam = nullptr;
+        juce::AudioParameterFloat* lfoMode4FrequencyParam = nullptr;
+        juce::AudioParameterFloat* lfoDepthPerChannelParam = nullptr;
+        juce::AudioParameterBool* lfoIsForChannelActive = nullptr;
+    };
+    std::array<LfoModeParameters, 4> lfoSynthLabModuleParams;
+    //
     //Lfo AM-Modulation Params
     struct juceLfoAmParameters
     {
@@ -648,6 +753,9 @@ private:
     // the central database for all wavetables
     std::shared_ptr<SynthLab::WavetableDatabase> wavetableDatabase;
     std::shared_ptr<SynthLab::MidiInputData> midiInputData;
+    // NEU: Master-Oszillator als Member halten, damit die Cores im Speicher bleiben:
+    std::shared_ptr<SynthLab::WTOscParameters> masterOscParams;
+    std::shared_ptr<SynthLab::WTOscillator> masterOscillator;
     // individual buffer for each of the 7 oscillators (for the individual Meters)
     std::array<juce::AudioBuffer<float>, 6> lfoBuffers;
     std::array<juce::AudioBuffer<float>, 4> wtOscBuffers;
@@ -796,6 +904,8 @@ private:
 #pragma region OTHER_STUFF
     void updateLabelColor(const juce::String& elementId, const juce::String& hexColorWithAlpha);
     static juce::ValueTree findNodeById(juce::ValueTree tree, const juce::String& targetId);
+    static juce::ValueTree findGuiNodeByProperty(juce::ValueTree tree, const juce::Identifier& prop, const juce::var& value);
+    void updateCoreCaptions(int oscNum, int coreIndex);
 
     static constexpr int maxVoices = 32; //we determine: 16 voices
     juce::Synthesiser synth;
@@ -823,7 +933,7 @@ private:
     std::array<int, 4> lastLfoFmWaveForm = {0, 0, 0, 0};
     std::array<int, 4> lastLfoAmWaveForm = {0, 0, 0, 0};
     std::array<bool, 4> lastIswtActive = {true, true, true, true};
-
+    std::array<int, 4> lastIndexModuklCoreWaveForm = {0, 1, 2};
 #pragma endregion OTHER_STUFF
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor);

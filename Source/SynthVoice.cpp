@@ -400,7 +400,7 @@ void SynthVoice::setFilterEnabled(int index, bool active)
 
 void SynthVoice::prepare (double sampleRate, int maxBlockSize, int outputChannels)
 {
-    setCurrentPlaybackSampleRate (sampleRate);
+    setCurrentCustomPlaybackSampleRate (sampleRate);
 
     // reset ADSR envelopes & SynthLab oscillators
     for (int ind = 0; ind < 4; ++ind)
@@ -442,6 +442,23 @@ void SynthVoice::prepare (double sampleRate, int maxBlockSize, int outputChannel
         wtMeterBuffers[i].clear();
     }
     isPrepared = true;
+}
+
+void SynthVoice::setCurrentCustomPlaybackSampleRate (const double newRate)
+{
+    juce::SynthesiserVoice::setCurrentPlaybackSampleRate(newRate);
+
+    if (newRate > 0.0)
+    {
+        for (int i = 0; i < 4; ++i)
+        {
+            if (wtOscillators[i] != nullptr)
+            {
+                // Setzt alle 4 Cores des Oszillators mit der ECHTEN Sample-Rate zurück
+                wtOscillators[i]->reset(newRate);
+            }
+        }
+    }
 }
 
 

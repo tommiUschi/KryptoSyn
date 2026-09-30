@@ -17,10 +17,18 @@ VST3/Standalone plugin, built with `JUCE` and the `SynthLab engine`, and `foleys
 
 [KryptoSyn Screenshot7](docs/page7.png)
 
+and there is a new module:
+
+[KryptoSyn Screenshot7](docs/page8.png) :
+
+-> for example, if you are in Syntlab-Morphing-Mode for a WaveTable, you can shift the 'Morph'-
+  Parameter. This creats a nice Sound
+
 ## Sampler
 
 As an example, I have included a sample folder licensed under 'Creative Commons Sampling+ 1.0' 
-—located at 'SynthLabSamples'—which has NOTHING to do with the SynthLab samples.
+—located at 'SynthLabSamples/InstrumentCollectionSfz'— which has NOTHING to do with the SynthLab samples.
+(example instrument is 'KeyBoard_Instruments/Grand Piano_K_Sustain', make sure, that you adjust the ADSR to piano)
 
 Within the main sample folder 'SynthLabSamples', the 'SynthLab structure' works,
 as does the 'sfz structure' of the 'CC Sampling+ 1.0' packs.
@@ -46,7 +54,11 @@ KryptoSyn already ships with JUCE and `foleys_gui_magic` vendored — no
 separate download is required for those. The **SynthLab SDK** (including
 the optional sample library) is subject to its own license from Tritone
 Systems, Inc. and is therefore **not** included in this repository; you
-need to obtain it yourself from https://www.willpirkle.com.
+need to obtain it yourself from https://www.willpirkle.com (It is very easy).
+Add SynthLab to the project folder as follows:
+'SDKs/SynthLab/...' (at the same level as 'Source' or 'Resources')
+And the Samples: 'SynthLabSamples/Mellotron, SynthLabSamples/Legacy
+(also at the same Level as 'Source' or 'SDKs') and so on.
 
 JUCE version: `8.0.12-4-g501c07674e`
 foleys_gui_magic version: `1.3.9`

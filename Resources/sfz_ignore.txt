@@ -1,0 +1,17 @@
+# SFZ-Filterregeln (Kommentare beginnen mit #)
+# Wildcards wie * und ? werden unterstützt.
+
+# Typische Include- und Sub-Dateien
+*.inc.sfz
+*_header.sfz
+*_global.sfz
+*_opcodes.sfz
+*_defines.sfz
+
+# Bekannte Unterordner oder spezielle Hilfsdateien
+/includes/*
+/internal/*
+common_*.sfz
+
+# Konkrete Problemdateien
+temp_*.sfz

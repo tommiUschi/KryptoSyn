@@ -5,6 +5,9 @@
 
 #include <foleys_gui_magic/foleys_gui_magic.h>
 #include "../Components/HelpTextItemComponent.h"
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_gui_extra/juce_gui_extra.h>
 
 /**
  * Helper-Class for the texts in tutorial -and licence window

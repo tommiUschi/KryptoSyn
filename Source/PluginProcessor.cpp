@@ -15,6 +15,10 @@
 #include "Helpers/PixelFIFO.h"
 #include <iterator> // needed for std::ssize
 
+#include "fourierwtcore.h"
+#include "morphwtcore.h"
+#include "sfxwtcore.h"
+
 
 const juce::Identifier ADSRPlot::typeId { "ADSRPlot" };
 struct SpectroParams;
@@ -276,6 +280,83 @@ struct PropertySynthFilterActiveListener : public juce::Value::Listener {
     juce::Value valueToListen;
     std::function<void(bool)> onChanchedCallback;
 };
+struct PropertyLfoModulCoreActiveListener : public juce::Value::Listener {
+    PropertyLfoModulCoreActiveListener (juce::Value v, std::function<void(bool)> callback)
+        : valueToListen (v), onChanchedCallback (std::move(callback)) {
+        valueToListen.addListener (this);
+    }
+    ~PropertyLfoModulCoreActiveListener() override {
+        valueToListen.removeListener (this);
+    }
+    void valueChanged (juce::Value& v) override {
+        if (onChanchedCallback)
+            onChanchedCallback (static_cast<bool>(v.getValue()));
+    }
+    juce::Value valueToListen;
+    std::function<void(bool)> onChanchedCallback;
+};
+// for the dynamic labels:
+struct ParameterDepthLambdaListener : public juce::AudioProcessorParameter::Listener
+{
+    ParameterDepthLambdaListener(juce::AudioProcessorParameter* paramToListen, std::function<void(float)> callback)
+        : param(paramToListen), onChangedCallback(std::move(callback))
+    {
+        if (param != nullptr)
+            param->addListener(this);
+    }
+
+    ~ParameterDepthLambdaListener() override
+    {
+        if (param != nullptr)
+            param->removeListener(this);
+    }
+
+    void parameterValueChanged(int parameterIndex, float newValue) override
+    {
+        // Den eingehenden Float-Wert (0.0 .. 1.0) direkt per callAsync übergeben
+        juce::MessageManager::callAsync([this, newValue]()
+        {
+            if (onChangedCallback)
+                onChangedCallback(newValue);
+        });
+    }
+
+    void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override {}
+
+    juce::AudioProcessorParameter* param = nullptr;
+    std::function<void(float)> onChangedCallback;
+};
+
+struct ParameterVarLambdaListener : public juce::AudioProcessorParameter::Listener
+{
+    ParameterVarLambdaListener(juce::AudioProcessorParameter* paramToListen, std::function<void(float)> callback)
+        : param(paramToListen), onChangedCallback(std::move(callback))
+    {
+        if (param != nullptr)
+            param->addListener(this);
+    }
+
+    ~ParameterVarLambdaListener() override
+    {
+        if (param != nullptr)
+            param->removeListener(this);
+    }
+
+    void parameterValueChanged(int parameterIndex, float newValue) override
+    {
+        // Den eingehenden Float-Wert (0.0 .. 1.0) direkt per callAsync übergeben
+        juce::MessageManager::callAsync([this, newValue]()
+        {
+            if (onChangedCallback)
+                onChangedCallback(newValue);
+        });
+    }
+
+    void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override {}
+
+    juce::AudioProcessorParameter* param = nullptr;
+    std::function<void(float)> onChangedCallback;
+};
 #pragma endregion GLOBAL_STRUCTS
 
 #pragma region SAMPLER_FINDINGS_HELPER
@@ -366,27 +447,6 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     // standalone or vst3 - replacement preprocessor for building
     currentPreProcessorReplacement = PreProcessorReplacement::Standalone;
 
-    wavetableDatabase = std::make_shared<SynthLab::WavetableDatabase>();
-    midiInputData = std::make_shared<SynthLab::MidiInputData>();
-
-    // for rev. spectrogram synth.:
-    audioGridData.assign (static_cast<size_t> (numColumns * numRows), 0.0f);
-    analyser = magicState.createAndAddObject<foleys::MagicAnalyser>("analyser");
-    // initialize the Synthesizers
-    synth.addSound(new SynthSound());
-    myVoices.clear();
-    synth.clearVoices();
-
-    for (int i = 0; i < maxVoices; ++i)
-    {
-        auto* newVoice = new SynthVoice();
-        newVoice->setWavetableDatabase(midiInputData, wavetableDatabase);
-        synth.addVoice(newVoice);
-        myVoices.add(newVoice);
-    }
-    // IMPORTANT: Register WAV and AIFF, otherwise files cannot be read!:
-    formatManager.registerBasicFormats();
-
     // positions measured exactly on 'anzeige.skala.png'(for all logarithm. paramaters):
     const std::vector<std::pair<float, float>> controlPoints = {
         { 0.00f, -60.0f }, // bottom
@@ -400,6 +460,96 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
         { 0.8738f,   6.0f },
         { 1.00f,  12.0f }  // top
     };// - for the vertical linear master-sliders
+
+    // 1. MidiInputData zuerst instanziieren (Verhindert SIGSEGV in SynthLab)
+    if (midiInputData == nullptr)
+        midiInputData = std::make_shared<SynthLab::MidiInputData>();
+
+    wavetableDatabase = std::make_shared<SynthLab::WavetableDatabase>();
+
+    // 2. Master-Oszillator als Member initialisieren (hält die Cores dauerhaft im Speicher)
+    masterOscParams = std::make_shared<SynthLab::WTOscParameters>();
+    masterOscillator = std::make_shared<SynthLab::WTOscillator>(midiInputData, masterOscParams, wavetableDatabase, 64);
+
+    masterOscillator->addModuleCore(std::make_shared<SynthLab::ClassicWTCore>());
+    masterOscillator->addModuleCore(std::make_shared<SynthLab::MorphWTCore>());
+    masterOscillator->addModuleCore(std::make_shared<SynthLab::SFXWTCore>());
+    masterOscillator->addModuleCore(std::make_shared<SynthLab::FourierWTCore>());
+
+    // reset() befüllt wavetableDatabase – die Cores bleiben jetzt im Speicher!
+    masterOscillator->reset(44100.0);
+    // 3. Nun die echten Namen aus der befüllten Datenbank auslesen
+    juce::StringArray realWaveNames;
+    uint32_t dbIndex = 0;
+
+    while (auto* source = wavetableDatabase->getTableSource(dbIndex))
+    {
+        if (const char* name = source->getWaveformName())
+        {
+            juce::String waveName = juce::String::fromUTF8(name).trim();
+
+            // 1. Sicherheits-Check: Ist der String ein gültiger, druckbarer Text?
+            bool isValidText = waveName.isNotEmpty() && waveName.length() < 64;
+
+            for (int i = 0; i < waveName.length(); ++i)
+            {
+                auto ch = waveName[i];
+                // Filtere unlesbare Steuerzeichen und Speicher-Garbage (ASCII < 32 oder typische Müll-Bytes)
+                if (ch < 32 || (ch > 126 && ch < 160))
+                {
+                    isValidText = false;
+                    break;
+                }
+            }
+
+            // 2. Nur echte, valide Namen aufnehmen
+            if (isValidText)
+            {
+                if (!realWaveNames.contains(waveName))
+                    realWaveNames.add(waveName);
+            }
+            else
+            {
+                // Sobald der erste unlesbare Müll-String auftaucht, haben wir das Ende der echten DB-Einträge erreicht!
+                break;
+            }
+        }
+        else
+        {
+            break;
+        }
+
+        dbIndex++;
+    }
+
+    // Fallback-Sicherheit (falls eine Bank doch keine Namen geliefert hat)
+    if (realWaveNames.isEmpty())
+    {
+        for (int i = 1; i <= 16; ++i)
+            realWaveNames.add("Wave " + juce::String(i));
+    }
+
+#pragma region SynthLabParams
+    InitParamsWToscs(controlPoints, realWaveNames);
+#pragma endregion SynthLabParams
+
+    // initialize the Synthesizers
+    synth.addSound(new SynthSound());
+    myVoices.clear();
+    synth.clearVoices();
+
+    for (int i = 0; i < maxVoices; ++i)
+    {
+        auto* newVoice = new SynthVoice();
+        newVoice->setWavetableDatabase(midiInputData, wavetableDatabase);
+        synth.addVoice(newVoice);
+        myVoices.add(newVoice);
+    }
+    // for rev. spectrogram synth.:
+    audioGridData.assign (static_cast<size_t> (numColumns * numRows), 0.0f);
+    analyser = magicState.createAndAddObject<foleys::MagicAnalyser>("analyser");
+    // IMPORTANT: Register WAV and AIFF, otherwise files cannot be read!:
+    formatManager.registerBasicFormats();
 
 #pragma region SamplerParamInit//Sampler Volume Param
     InitSamplerParams(controlPoints);
@@ -416,11 +566,6 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 
     if (currentPreProcessorReplacement == PreProcessorReplacement::VST3)
         setExplicitGuiSize (0.85f);
-
-#pragma region SynthLabParams
-    InitParamsWToscs(controlPoints);
-#pragma endregion SynthLabParams
-
 
 #pragma region MainParamsInit
     InitParamsMasterSound(controlPoints);
@@ -440,12 +585,14 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     clearCanvasImage();
     InitSpectroParameters(controlPoints);
     //==================================================================================
-
+    // == modul core-modulation =====================================================
+    InitLfoModeParameters();
+    //===============================================================================
 #pragma region GUI_TRIGGERS
     auto pNameViewIndexParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"View Index "));
     addParameter(viewIndexParam = new juce::AudioParameterChoice(juce::ParameterID ("view_index", 1), pNameViewIndexParam,
                                                                  juce::StringArray{
-                                                                     "Wavetables", "Lfos", "Samples",
+                                                                     "Wavetables", "Lfos", "Lfos Modi", "Samples",
                                                                      "SpectroSynth", "Modulation", "Effects", "Master" }, 0));
     // not yet used
     auto pNameSwitchTimerParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Switch Timer "));
@@ -529,33 +676,39 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
         }
     });
 
-    magicState.addTrigger("Samples", [this] {
+    magicState.addTrigger("Lfos Modi", [this] {
         if (viewIndexParam) {
             viewIndexParam->operator=(2);
         }
     });
 
-    magicState.addTrigger("SpectroSynth", [this] {
+    magicState.addTrigger("Samples", [this] {
         if (viewIndexParam) {
             viewIndexParam->operator=(3);
         }
     });
 
-    magicState.addTrigger("Modulation", [this] {
+    magicState.addTrigger("SpectroSynth", [this] {
         if (viewIndexParam) {
             viewIndexParam->operator=(4);
         }
     });
 
-    magicState.addTrigger("Effects", [this] {
+    magicState.addTrigger("Modulation", [this] {
         if (viewIndexParam) {
             viewIndexParam->operator=(5);
         }
     });
 
-    magicState.addTrigger("Master", [this] {
+    magicState.addTrigger("Effects", [this] {
         if (viewIndexParam) {
             viewIndexParam->operator=(6);
+        }
+    });
+
+    magicState.addTrigger("Master", [this] {
+        if (viewIndexParam) {
+            viewIndexParam->operator=(7);
         }
     });
 
@@ -607,6 +760,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     // In the final release product: directly from RAM, without a hard drive check
     magicState.setGuiValueTree (BinaryData::magic_xml, BinaryData::magic_xmlSize);
 #endif
+    InitDynamicLabelsTriggers();
     InitializeWTOscTriggers();
     InitializeGainFilterTriggers();
     InitializeSamplerActiveTriggers();
@@ -616,6 +770,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     InitializeAnalysTrigger();
     InitializeKeybBigSmallTriggers();
     InitializeSynthFilterActiveTriggers();
+    InitializeLfoModuleCoreActiveTriggers();
+    InitDynamicLabelsDepthTriggers();
     *bothAnalysersActiveParam = false;
     // =====================================/
 #ifdef _DEBUG
@@ -842,6 +998,28 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
     //master-fm/am-modulation:
     lfoFmDataMaster.prepareToPlayOsc(masterSpec);
     lfoAmDataMaster.prepareToPlayOsc(masterSpec);
+    for (int ind = 0; ind < 4; ++ind) {
+        for (int inx = 0; inx < 4; ++inx) {
+            lfosModuleCore[ind][inx].prepareToPlayOsc(masterSpec);
+        }
+    }
+    for (int ind = 0; ind < 4; ind++)
+    {
+        const int curretLfoModCoreWaveForm = lfoSynthLabModuleParams[ind].lfoModeWaveFormParam->getIndex();
+        //if(lastIndexModuklCoreWaveForm[ind] != curretLfoModCoreWaveForm)
+        //{
+            lfosModuleCore[ind][0].setLfoWave(curretLfoModCoreWaveForm);
+            lfosModuleCore[ind][1].setLfoWave(curretLfoModCoreWaveForm);
+            lfosModuleCore[ind][2].setLfoWave(curretLfoModCoreWaveForm);
+            lfosModuleCore[ind][3].setLfoWave(curretLfoModCoreWaveForm);
+        //}
+        //lastIndexModuklCoreWaveForm[ind] = curretLfoModCoreWaveForm;
+
+        lfosModuleCore[ind][0].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode1FrequencyParam, 1.0f);
+        lfosModuleCore[ind][1].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode2FrequencyParam, 1.0f);
+        lfosModuleCore[ind][2].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode3FrequencyParam, 1.0f);
+        lfosModuleCore[ind][3].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode4FrequencyParam, 1.0f);
+    }
     // feed all modules with the 'Spec'
     chorusModule.prepare (masterSpec);
     flangerModule.prepare (masterSpec);
@@ -1033,6 +1211,49 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         locSnapShot[i].oscilShape = (*synthLabOscParams[i].oscillatorShape);
     }
 
+    const int numSamples  = buffer.getNumSamples();
+    const int numChannels = getTotalNumOutputChannels();
+
+
+    // 2. LFO-Parameter aktualisieren & Modulation auf den Snapshot anwenden
+    for (int ind = 0; ind < 4; ++ind)
+    {
+        if (lfoSynthLabModuleParams[ind].lfoIsForChannelActive->get())
+        {
+            const int currentWave = lfoSynthLabModuleParams[ind].lfoModeWaveFormParam->getIndex();
+            const float depth = *lfoSynthLabModuleParams[ind].lfoDepthPerChannelParam;
+
+            // Frequenzen & Wellenformen an LFOs übergeben
+            lfosModuleCore[ind][0].setLfoWave(currentWave);
+            lfosModuleCore[ind][1].setLfoWave(currentWave);
+            lfosModuleCore[ind][2].setLfoWave(currentWave);
+            lfosModuleCore[ind][3].setLfoWave(currentWave);
+
+            lfosModuleCore[ind][0].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode1FrequencyParam, 1.0f);
+            lfosModuleCore[ind][1].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode2FrequencyParam, 1.0f);
+            lfosModuleCore[ind][2].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode3FrequencyParam, 1.0f);
+            lfosModuleCore[ind][3].setAMParams(*lfoSynthLabModuleParams[ind].lfoMode4FrequencyParam, 1.0f);
+
+            // Modulation berechnen und auf Snapshot anwenden
+            for (int m = 0; m < 4; ++m)
+            {
+                // LFO-Sample abrufen (ausgehend von 0.0 ... 1.0 oder -1.0 ... +1.0)
+                float lfoVal = lfosModuleCore[ind][m].getNextAMSample();
+
+                // Falls der LFO pro Sample fortschaltet, rücken wir ihn für den Rest des Blocks vor:
+                for (int s = 1; s < numSamples; ++s)
+                    lfosModuleCore[ind][m].getNextAMSample(); // Phase für den Block synchron halten
+
+                // Modulationsberechnung: Basiswert + (LFO * Tiefe)
+                float modulatedValue = locSnapShot[ind].mods[m] + (lfoVal * depth);
+
+                // WICHTIG: Wert auf [0.0f, 1.0f] begrenzen!
+                locSnapShot[ind].mods[m] = juce::jlimit(0.0f, 1.0f, modulatedValue);
+            }
+        }
+    }
+
+
     for (int ind = 0; ind < 4; ind++) {
 
         const bool _currentIsActive = synthLabOscParams[ind].isActivated->get();
@@ -1046,7 +1267,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
                             locSnapShot[ind].sustain, locSnapShot[ind].release, ind);
                     voiceWt->setWtActive(ind,  _currentIsActive); // activated state
                     voiceWt->setFilterEnabled(ind, locSnapShot[ind].filterIsActive);
-                    p->waveIndex = locSnapShot[ind].waveP;
+                    // [% 16] Stellt sicher, dass p->waveIndex nie größer als 15 wird (0..15 für die 16 Slots des Cores):
+                    p->waveIndex = locSnapShot[ind].waveP % 16;
                     p->moduleIndex = locSnapShot[ind].coreP;
                     p->panValue = locSnapShot[ind].pan;
                     p->outputAmplitude_dB = locSnapShot[ind].vol;
@@ -1315,8 +1537,6 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     //= begin meter ================================================================
     // for the Meter:
     // ── Individual meters: sum all voices ─────────────────────────────────
-    const int numSamples  = buffer.getNumSamples();
-    const int numChannels = getTotalNumOutputChannels();
 
     // empty all 4 buffers at lightning speed (no heap allocation)
     for (auto& buf : wtMeterSum)
@@ -1401,14 +1621,17 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
 juce::File AudioPluginAudioProcessor::getSampleBaseDir() const
 {
 #ifdef _DEBUG
-    return juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
+    // KORREKTUR: Auch hier den Unterordner /CustomSamples anfügen!
+    return juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/CustomSample/");
 #else
     auto dir = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
-                    .getParentDirectory()   // Standalone
-                    .getParentDirectory()   // Release
+                    .getParentDirectory()   // Standalone Binary Directory
+                    .getParentDirectory()   // Release Parent
                     .getChildFile ("SynthLabSamples");
-    if (! dir.exists())
+
+    if (!dir.exists())
         dir = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/SynthLabSamples/");
+
     return dir;
 #endif
 }
@@ -1918,6 +2141,7 @@ void AudioPluginAudioProcessor::updateLabelColor (const juce::String& elementId,
     }
 }
 
+
 // helper function for searching the tree
 juce::ValueTree AudioPluginAudioProcessor::findNodeById(juce::ValueTree tree, const juce::String& targetId)
 {
@@ -1931,6 +2155,64 @@ juce::ValueTree AudioPluginAudioProcessor::findNodeById(juce::ValueTree tree, co
             return found;
     }
     return {};
+}
+
+// Sucht rekursiv im GUI-ValueTree nach einem Knoten mit einer bestimmten Property (z. B. parameter="SL_MOD_A_1")
+juce::ValueTree AudioPluginAudioProcessor::findGuiNodeByProperty(juce::ValueTree tree, const juce::Identifier& prop, const juce::var& value)
+{
+    if (tree.getProperty(prop) == value)
+        return tree;
+
+    for (int i = 0; i < tree.getNumChildren(); ++i)
+    {
+        auto found = findGuiNodeByProperty(tree.getChild(i), prop, value);
+        if (found.isValid())
+            return found;
+    }
+    return {};
+}
+
+void AudioPluginAudioProcessor::updateCoreCaptions(int oscNum, int coreIndex)
+{
+    // Die 4 Beschriftungen je nach Modul/Core (0=Classic, 1=Morphing, 2=SFX, 3=Fourier)
+    static const char* labels[4][4] = {
+        /* 0: Classic  */ { "Phase",    "Shape",     "Sync",     "Sub Mix"  },
+        /* 1: Morphing */ { "Morph",    "FrameWarp", "Offset",   "Saturate" },
+        /* 2: SFX      */ { "Spectral", "Formant",   "PhaseDist","Bitcrush" },
+        /* 3: Fourier  */ { "Partials", "Harmonics", "SpecTilt", "PhaseSpr" }
+    };
+    const int safeCore = juce::jlimit(0, 3, coreIndex);
+    // Zugriff auf den gesamten GUI-Tree von PGM
+    auto guiTree = magicState.getGuiTree();
+
+    juce::String literal = "";
+    for (int m = 0; m < 4; ++m)
+    {
+        switch (m)
+        {
+        case 0:
+            literal = "A";
+            break;
+        case 1:
+            literal = "B";
+            break;
+        case 2:
+            literal = "C";
+            break;
+        case 3:
+            literal = "D";
+            break;
+        default:
+            literal = "A";
+        }
+        // Generiert den Property-Namen z. B. "SL_MOD_A_1_caption"
+        juce::String propName = "SL_MOD_" + literal + "_" + juce::String(oscNum) + "_caption";
+        //std::cout << propName << std::endl;
+
+        // DIREKT in den magicState schreiben (Kein guiTree.setProperty!)
+        // PGM abonniert diese Property automatisch für das <Label text="{...}"/>
+        magicState.getPropertyAsValue(propName).setValue(labels[safeCore][m]);
+    }
 }
 #pragma endregion HELPER_METHODS
 
@@ -2167,7 +2449,8 @@ void AudioPluginAudioProcessor::InitParamsMasterSound(const std::vector<std::pai
         ));
 }
 
-void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<float, float>> controlPointsParam)
+void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<float, float>>& controlPointsParam,
+                        const juce::StringArray& realWaveNames)
 {
     //==================================================================================
     // for SynthLab:
@@ -2187,11 +2470,10 @@ void AudioPluginAudioProcessor::InitParamsWToscs (const std::vector<std::pair<fl
 
         // since different cores have varying numbers of waves:
         // a list ranging from "Wave 1" to "Wave 16" is usually used here:
-        juce::StringArray waveIndices;
-        for (int i = 1; i <= 16; ++i) waveIndices.add("Slot_" + juce::String(i));
+        // Waveform Index Parameter: Nutzt jetzt die echten Namen aus der Datenbank!
         auto pNameWtWaveParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Waveform Index"));
         addParameter(synthLabOscParams[inx].waveParam = new juce::AudioParameterChoice(
-            juce::ParameterID ("SL_WAVE_" + suffixWT, 1), pNameWtWaveParam, waveIndices, inx));
+            juce::ParameterID ("SL_WAVE_" + suffixWT, 1), pNameWtWaveParam, realWaveNames, 0));
 
 
         auto pNameWtAttack = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Attack Wt ")) + suffixWT;
@@ -2426,6 +2708,98 @@ void AudioPluginAudioProcessor::InitJuceWtFilterParameters()
             (juce::ParameterID ("WT_FILTER_ACTIVE_" + suffix, 1), pNameWtFilterActiveParam, true));
     }
 }
+
+
+/* 4x4 LFOs modulate the four parameters per channel—which depend on
+ *the ModulCore—at very slow frequencies. The frequency parameters and the
+ *waveform are initialized here. One waveform per channel.*/
+void AudioPluginAudioProcessor::InitLfoModeParameters()
+{
+    for (int ind = 0; ind < 4; ++ind)
+    {
+        auto suffixLfoModi = juce::String(ind + 1);
+        // Lfo Waveform
+        auto pNameLfoModiWave = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Modi Wave ")) + suffixLfoModi;
+        addParameter(lfoSynthLabModuleParams[ind].lfoModeWaveFormParam = new juce::AudioParameterChoice(
+        juce::ParameterID ("LFO_MODI_WAVE_" + suffixLfoModi, 1), pNameLfoModiWave,
+        juce::StringArray{"sine", "saw", "square"}, std::min(ind, 2)));
+
+        //Lfo Freq
+        juce::NormalisableRange<float> fmFreqRangeMod1(0.15f, 1.7f, 0.01f);
+        auto pNameMod1Freq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Module1 Freq ")) + suffixLfoModi;
+        addParameter(lfoSynthLabModuleParams[ind].lfoMode1FrequencyParam = new juce::AudioParameterFloat(
+            juce::ParameterID ("LFO_MODUS_1_FREQ_" + suffixLfoModi, 1),
+            pNameMod1Freq,
+            fmFreqRangeMod1, 0.2f, juce::AudioParameterFloatAttributes()
+            .withStringFromValueFunction([](const float value, int)
+            {
+                return juce::String(value, 1) + " Hz"; })
+            .withValueFromStringFunction([](const juce::String& text){
+                return text.getFloatValue();
+            })
+        ));
+
+        juce::NormalisableRange<float> fmFreqRangeMod2(0.15f, 1.7f, 0.01f);
+        auto pNameMod2Freq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Module2 FmFreq ")) + suffixLfoModi;
+        addParameter(lfoSynthLabModuleParams[ind].lfoMode2FrequencyParam = new juce::AudioParameterFloat(
+            juce::ParameterID ("LFO_MODUS_2_FREQ_" + suffixLfoModi, 1),
+            pNameMod2Freq,
+            fmFreqRangeMod2, 0.2f, juce::AudioParameterFloatAttributes()
+            .withStringFromValueFunction([](const float value, int)
+            {
+                return juce::String(value, 1) + " Hz"; })
+            .withValueFromStringFunction([](const juce::String& text){
+                return text.getFloatValue();
+            })
+        ));
+
+        juce::NormalisableRange<float> fmFreqRangeMod3(0.15f, 1.7f, 0.01f);
+        auto pNameMod3Freq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Module3 Freq ")) + suffixLfoModi;
+        addParameter(lfoSynthLabModuleParams[ind].lfoMode3FrequencyParam = new juce::AudioParameterFloat(
+            juce::ParameterID ("LFO_MODUS_3_FREQ_" + suffixLfoModi, 1),
+            pNameMod3Freq,
+            fmFreqRangeMod3, 0.2f, juce::AudioParameterFloatAttributes()
+            .withStringFromValueFunction([](const float value, int)
+            {
+                return juce::String(value, 1) + " Hz"; })
+            .withValueFromStringFunction([](const juce::String& text){
+                return text.getFloatValue();
+            })
+        ));
+
+        juce::NormalisableRange<float> fmFreqRangeMod4(0.15f, 1.7f, 0.01f);
+        auto pNameMod4Freq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Module4 Freq ")) + suffixLfoModi;
+        addParameter(lfoSynthLabModuleParams[ind].lfoMode4FrequencyParam = new juce::AudioParameterFloat(
+            juce::ParameterID ("LFO_MODUS_4_FREQ_" + suffixLfoModi, 1),
+            pNameMod4Freq,
+            fmFreqRangeMod4, 0.2f, juce::AudioParameterFloatAttributes()
+            .withStringFromValueFunction([](const float value, int)
+            {
+                return juce::String(value, 1) + " Hz"; })
+            .withValueFromStringFunction([](const juce::String& text){
+                return text.getFloatValue();
+            })
+        ));
+
+        juce::NormalisableRange<float> lfoModDepthRage(0.00f, 1.0f, 0.01f);
+        auto pNameModDepthPerChnnel = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Module DepthPerChannel ")) + suffixLfoModi;
+        addParameter(lfoSynthLabModuleParams[ind].lfoDepthPerChannelParam = new juce::AudioParameterFloat(
+            juce::ParameterID ("LFO_MODUL_DEPTH_PER_CAHANNEL_" + suffixLfoModi, 1),
+            pNameModDepthPerChnnel, lfoModDepthRage, 0.8f, juce::AudioParameterFloatAttributes()
+            .withStringFromValueFunction([](const float value, int)
+            {
+                return juce::String(value, 2); })
+            .withValueFromStringFunction([](const juce::String& text){
+                return text.getFloatValue();
+            })
+        ));
+
+        auto pNameLfoIsForChannelActiveParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo ForChannel Active")) + suffixLfoModi;
+        addParameter(lfoSynthLabModuleParams[ind].lfoIsForChannelActive = new juce::AudioParameterBool
+            (juce::ParameterID ("LFO_FORCHANNEL_ACTIVE_" + suffixLfoModi, 1), pNameLfoIsForChannelActiveParam, false));
+    }
+}
+
 
 // parameters frequency - und amplitude modulation:
 void AudioPluginAudioProcessor::InitLfoParameters()
@@ -2832,6 +3206,62 @@ void AudioPluginAudioProcessor::InitializeWTOscTriggers()
     }
 }
 
+
+
+void AudioPluginAudioProcessor::InitDynamicLabelsTriggers()
+{
+    MyParameterVarLambdaListeners.clear(); // Alten Parameter-Listener aufräumen
+
+    for (int i = 0; i < 4; ++i)
+    {
+        const int oscNum = i + 1; // 1-basiert für SL_CORE_1, SL_CORE_2, etc.
+        // --- 2. Parameter-Listener für Modul-Umschaltung (SL_CORE_x) ---
+        if (auto* coreParam = synthLabOscParams[i].coreParam)
+        {
+            MyParameterVarLambdaListeners.push_back(std::make_unique<ParameterVarLambdaListener>(
+                coreParam,
+                [this, oscNum](float newNormalizedValue) {
+                    // Exakte Umrechnung von float [0.0 .. 1.0] auf Index [0 .. 3]
+                    const int choiceIndex = juce::jlimit(0, 3, static_cast<int>(std::round(newNormalizedValue * 3.0f)));
+                    // GUI Captions aktualisieren
+                    updateCoreCaptions(oscNum, choiceIndex);
+                }
+            ));
+
+            // Initialen Zustand beim Start setzen
+            updateCoreCaptions(oscNum, coreParam->getIndex());
+        }
+    }
+}
+
+
+void AudioPluginAudioProcessor::InitDynamicLabelsDepthTriggers()
+{
+    MyParameterDepthLambdaListeners.clear(); // Alten Parameter-Listener aufräumen
+
+    for (int i = 0; i < 4; ++i)
+    {
+        const int oscNum = i + 1; // 1-basiert für SL_CORE_1, SL_CORE_2, etc.
+        // --- 2. Parameter-Listener für Modul-Umschaltung (SL_CORE_x) ---
+        if (auto* coreParam = synthLabOscParams[i].coreParam)
+        {
+            MyParameterDepthLambdaListeners.push_back(std::make_unique<ParameterDepthLambdaListener>(
+                coreParam,
+                [this, oscNum](float newNormalizedValue) {
+                    // Exakte Umrechnung von float [0.0 .. 1.0] auf Index [0 .. 3]
+                    const int choiceIndex = juce::jlimit(0, 3, static_cast<int>(std::round(newNormalizedValue * 3.0f)));
+                    // GUI Captions aktualisieren
+                   //updateCoreCaptions(oscNum, choiceIndex);
+                }
+            ));
+
+            // Initialen Zustand beim Start setzen
+            //updateCoreCaptions(oscNum, coreParam->getIndex());
+        }
+    }
+}
+
+
 // switch display plot adsr or filter
 void AudioPluginAudioProcessor::InitializeGainFilterTriggers()
 {
@@ -2972,18 +3402,20 @@ void AudioPluginAudioProcessor::InitializeSamplerFilterActiveTriggers()
     propValue.setValue(initVal);
 }
 
-void AudioPluginAudioProcessor::InitializeEffectsTriggers()
+
+void AudioPluginAudioProcessor::InitializeLfoModuleCoreActiveTriggers()
 {
-    MyPropertyEffectsListeners.clear();
+    MyPropertyLfoModulCoreActiveListeners.clear();
     for (int i = 0; i < 4; ++i) {
-        juce::String propName = "effect" + juce::String(i) + "Active";
-        const bool initVal = effekteActiveParams[i].effectIsActive->get();
+        juce::String propName = "lfoModule" + juce::String(i) + "Active";
+        const bool initVal = lfoSynthLabModuleParams[i].lfoIsForChannelActive->get();
         auto propValue = magicState.getPropertyAsValue(propName);
-        MyPropertyEffectsListeners.push_back (std::make_unique<PropertyEffectsListener> (
+
+        MyPropertyLfoModulCoreActiveListeners.push_back (std::make_unique<PropertyLfoModulCoreActiveListener> (
             propValue,
             [this, i] (bool newValue)
             {
-                if (auto* p = effekteActiveParams[i].effectIsActive) {
+                if (auto* p = lfoSynthLabModuleParams[i].lfoIsForChannelActive) {
                     p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);
                 }
             }
@@ -2991,6 +3423,7 @@ void AudioPluginAudioProcessor::InitializeEffectsTriggers()
         propValue.setValue(initVal);
     }
 }
+
 
 void AudioPluginAudioProcessor::InitializeTutWindowTriggers()
 {
@@ -3059,6 +3492,26 @@ void AudioPluginAudioProcessor::InitializeSpectroTriggers()
         }
     ));
     propVal.setValue(initVal);
+}
+
+void AudioPluginAudioProcessor::InitializeEffectsTriggers()
+{
+    MyPropertyEffectsListeners.clear();
+    for (int i = 0; i < 4; ++i) {
+        juce::String propName = "effect" + juce::String(i) + "Active";
+        const bool initVal = effekteActiveParams[i].effectIsActive->get();
+        auto propValue = magicState.getPropertyAsValue(propName);
+        MyPropertyEffectsListeners.push_back (std::make_unique<PropertyEffectsListener> (
+            propValue,
+            [this, i] (bool newValue)
+            {
+                if (auto* p = effekteActiveParams[i].effectIsActive) {
+                    p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);
+                }
+            }
+        ));
+        propValue.setValue(initVal);
+    }
 }
 
 void AudioPluginAudioProcessor::TriggerTutWindow()
@@ -4551,13 +5004,27 @@ void AudioPluginAudioProcessor::loadSampleSourceInBackground (const juce::File& 
     // CASE B: folder
     else if (sampleSource.isDirectory())
     {
-        juce::Array<juce::File> sfzFiles;
-        for (const auto& entry : juce::RangedDirectoryIterator (sampleSource, true, "*.sfz", juce::File::findFiles))
-            sfzFiles.add (entry.getFile());
+        SfzFileFilter filter;
+        // Standard-Regeln setzen (oder aus einer Datei/BinaryData laden)
+        filter.addRule ("*.inc.sfz");
+        filter.addRule ("*_header.sfz");
+        filter.addRule ("*_opcodes.sfz");
 
-        if (!sfzFiles.isEmpty())
+        juce::Array<juce::File> validSfzFiles;
+        for (const auto& entry : juce::RangedDirectoryIterator (sampleSource, true, "*.sfz", juce::File::findFiles))
         {
-            loadSfzPresetToBuffer (sfzFiles.getFirst(), loadedSounds);
+            juce::File file = entry.getFile();
+
+            // NUR gültige Haupt-SFZs aufnehmen:
+            if (!filter.shouldIgnore (file, sampleSource))
+            {
+                validSfzFiles.add (file);
+            }
+        }
+
+        if (!validSfzFiles.isEmpty())
+        {
+            loadSfzPresetToBuffer (validSfzFiles.getFirst(), loadedSounds);
         }
         else {
             // the sampler structures without sfz (clean, using smart pointers)
@@ -4976,7 +5443,7 @@ void AudioPluginAudioProcessor::ChangeKeyBoard()
 {
     // toggle elegantly (instead of if/else)
     boolKeyBSwitch = !boolKeyBSwitch;
-    // set values ​​based on the state
+    // set values based on the state
     const float keyWidth        = boolKeyBSwitch ? 50.0f : 30.0f;
     const float ratio           = boolKeyBSwitch ? 0.6f  : 0.4f;
     const int rangeLimitLowest  = boolKeyBSwitch ? 24    : 0;

@@ -11,11 +11,23 @@ cmake_install.cmake
 # SynthLab: must be obtained by the user, not part of the repository
 SDKs/SynthLab/
 
-# 1. Ignore all contents in the SynthLabSamples folder
+# Ignore all content in SynthLabSamples by default
 SynthLabSamples/*
 
-# 2. Exception: Explicitly KEEP the Clavecin-master folder
-!SynthLabSamples/Clavecin-master/
+# Share folder paths step-by-step so that Git looks into them
+!SynthLabSamples/InstrumentCollectionSfz/
+SynthLabSamples/InstrumentCollectionSfz/*
+
+!SynthLabSamples/InstrumentCollectionSfz/KeyBoard_Instruments/
+SynthLabSamples/InstrumentCollectionSfz/KeyBoard_Instruments/*
+
+!SynthLabSamples/InstrumentCollectionSfz/samples/
+SynthLabSamples/InstrumentCollectionSfz/samples/*
+
+# Explicitly exclude the target file and target folder from being ignored
+!SynthLabSamples/InstrumentCollectionSfz/KeyBoard_Instruments/Grand Piano_K_Sustain.sfz
+!SynthLabSamples/InstrumentCollectionSfz/samples/Grand Piano_K_Sustain/
+!SynthLabSamples/InstrumentCollectionSfz/samples/Grand Piano_K_Sustain/**
 
 
 # foleys_gui_magic: deliberately DO NOT ignore, as it is vendored and part of the repository
