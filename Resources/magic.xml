@@ -45,9 +45,9 @@
             caption-placement="centred" flex-shrink="1.0" flex-grow="1.0"
             min-width="860" border-color="FF203135" pos-x="0%" pos-y="0%"
             pos-height="4.85%" min-height="28" display="contents" pos-width="100%">
-        <View pos-width="14%" margin="0" padding="0" border="0" radius="5"
-              pos-x="1%" background-image="Synth_Name_png" background-color="FF031c14"
-              image-placement="stretch" pos-height="100%" max-height="36" pos-y="2%"/>
+        <View pos-width="14%" margin="0" padding="0" border="1.8" radius="5" border-color="FF000000"
+              pos-x="1%" background-image="Synth_Name_png" background-color="FF00281b"
+              image-placement="stretch" pos-height="100%" max-height="36" pos-y="1%"/>
         <View margin="0" padding="0" border="0" radius="0" caption-placement="centred-left"
               flex-align-self="center" background-color="FF29433B" flex-align-content="stretch"
               flex-align-items="stretch" max-width="314" min-width="224" flex-grow="1.0"
@@ -376,14 +376,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF158071"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
                                 caption-color="FFF2F7CF" caption-size="17" caption="f.-tuning"
                                 flex-align-self="stretch" parameter="TUNE_1" pos-width="44.76%"
                                 pos-height="96.34%" pos-x="1%" pos-y="0.5%" flex-grow="1.0" flex-shrink="1.0"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="FF158071" caption-color="FFF2F7CF" caption-size="18"
                                 caption="volume" parameter="VOLUMEwT_1" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%" flex-grow="1.0" flex-shrink="1.0"/>
@@ -395,14 +395,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF158071"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
                                 caption-color="FFF2F7CF" caption-size="17" caption="pan" flex-align-self="stretch"
                                 parameter="PAN_1" pos-x="1%" pos-y="0.5%" pos-width="44.76%"
                                 pos-height="96.34%"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="FF158071" caption-color="FFF2F7CF" caption-size="18"
                                 caption="c.-tuning" parameter="RESERVE_1" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%"/>
@@ -417,7 +417,7 @@
                           <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                   min-width="65.8" max-width="94" min-height="53.3" max-height="64.78"
                                   filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                  slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF158071"
+                                  slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
                                   caption-color="00DAFFF5" caption-size="17" caption="mode A" flex-align-self="stretch"
                                   pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                   parameter="SL_MOD_A_1"/>
@@ -433,7 +433,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="FF158071" caption-color="00DAFFF5" caption-size="17"
                                 caption="mode B" pos-x="0%" pos-y="0%" pos-width="100%"
                                 pos-height="100%" parameter="SL_MOD_B_1"/>
@@ -454,7 +454,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF158071"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
                                 caption-color="00DAFFF5" caption-size="17" caption="mode C" flex-align-self="stretch"
                                 pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                 parameter="SL_MOD_C_1"/>
@@ -470,7 +470,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="FF158071" caption-color="00DAFFF5" caption-size="17"
                                 caption="mode D" pos-x="0%" pos-y="0%" pos-width="100%"
                                 pos-height="100%" parameter="SL_MOD_D_1"/>
@@ -504,7 +504,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="FF158071" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="FF158071" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="FMDEPTH1"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
@@ -525,7 +525,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="FF158071" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="FF158071" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="AMDEPTH1"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
@@ -536,14 +536,14 @@
                               background-color="00000000">
                           <Label pos-x="1%" pos-y="0%" pos-width="22%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" text="-1.0" font-size="15"
-                                 background-color="00000000" justification="centred" label-text="FFC5FF2C"/>
+                                 background-color="00000000" justification="centred" label-text="FF73FF2C"/>
                           <Label margin="0" padding="0" border="0" radius="0" pos-width="54%"
                                  pos-x="26%" pos-y="0%" pos-height="100%" background-color="00000000"
                                  label-text="FF99FFCE" font-size="14.5" text="oscShape" justification="centred-bottom"
                                  label-editing-outline=""/>
                           <Label pos-x="82%" pos-y="0%" pos-width="19%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" background-color="00000000"
-                                 font-size="15" text="1.0" label-text="FFC5FF2C" justification="centred-right"/>
+                                 font-size="15" text="1.0" label-text="FF73FF2C" justification="centred-right"/>
                         </View>
                         <Slider slider-textbox="no-textbox" slider-type="linear-horizontal" margin="0"
                                 padding="0" radius="0" pos-width="99%" pos-y="41.5%" pos-height="45%"
@@ -620,19 +620,19 @@
                       <Slider pos-width="64%" pos-height="42%" caption="gain WaveTable1" caption-size="15.5"
                               margin="0.5" padding="0" radius="5" background-color="FF244136"
                               border-color="00000000" pos-y="0%" caption-color="FFFFFFFF" slider-text-background="FF000000"
-                              slider-text="FFC5FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
+                              slider-text="FF73FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
                               slider-thumb="FF00FFB3" slider-track="FF00FFB3" parameter="VOLUMEwT_1"/>
                       <Slider pos-width="25%" pos-height="52%" pos-y="48%" pos-x="12%" background-color="FF244136"
                               margin="1" padding="0.5" radius="5" max-height="79" max-width="94"
                               min-height="53.3" min-width="65.8" slider-type="rotary" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
                               caption="filt. A level" slider-text-background="FF060D09" slider-text-outline="FF158071"
-                              slider-text="FFC5FF2C" parameter="ENVWTFLT1"/>
+                              slider-text="FF73FF2C" parameter="ENVWTFLT1"/>
                       <Slider slider-textbox="textbox-below" slider-type="rotary" pos-width="25%"
                               pos-x="40%" margin="1" padding="0.5" radius="5" border-color="00000000"
                               background-color="FF244136" pos-y="48%" pos-height="52%" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
-                              caption="filter reso." slider-text-background="FF060D09" slider-text="FFC5FF2C"
+                              caption="filter reso." slider-text-background="FF060D09" slider-text="FF73FF2C"
                               slider-text-outline="FF158071" max-width="94" max-height="79"
                               min-height="53.3" min-width="65.8" parameter="FILTERRESO1"/>
                       <View pos-width="35%" pos-x="66%" margin="0" padding="0" border="0"
@@ -653,7 +653,7 @@
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
                                 num-filmstrip-images="46" caption-color="FFF3F9D1" caption-size="17"
                                 caption="Cutt-off Freq" border-color="00000000" border="0" slider-text-background="FF060D09"
-                                slider-text="FFC5FF2C" slider-text-outline="FF158071" max-width="94"
+                                slider-text="FF73FF2C" slider-text-outline="FF158071" max-width="94"
                                 max-height="79" min-height="53.3" min-width="65.8" parameter="FILTERFREQ1"/>
                       </View>
                     </View>
@@ -680,7 +680,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod1.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod1.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_A_1"/>
                       </View>
@@ -703,7 +703,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod2.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod2.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_B_1"/>
                       </View>
@@ -726,7 +726,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod3.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod3.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_C_1"/>
                       </View>
@@ -749,7 +749,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="45%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod4.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod4.0" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_D_1"/>
                       </View>
@@ -856,7 +856,7 @@
                                     parameter="SL_WAVE_3" pos-width="43.53%" max-width="148" pos-height="61.8%"
                                     pos-x="3%" pos-y="0%" flex-grow="1.0" flex-shrink="1.0" min-width="103.6"
                                     flex-align-self="stretch"/>
-                          <ComboBox margin="2" padding="0" border="1.2" radius="3.5" border-color="FFC5FF2C"
+                          <ComboBox margin="2" padding="0" border="1.2" radius="3.5" border-color="FF73FF2C"
                                     lookAndFeel="LookAndFeel_V4" min-height="22.4" max-height="34"
                                     combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FFADEF00"
                                     parameter="SL_CORE_3" pos-width="43.53%" pos-x="52%" pos-y="0%"
@@ -877,14 +877,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF2A8015"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF2A8015"
                                 caption-color="FFF2F7CF" caption-size="17" caption="f.-tuning"
                                 flex-align-self="stretch" parameter="TUNE_3" pos-width="44.76%"
                                 pos-height="96.34%" pos-x="1%" pos-y="0.5%" flex-grow="1.0" flex-shrink="1.0"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="FF2A8015" caption-color="FFF2F7CF" caption-size="18"
                                 caption="volume" parameter="VOLUMEwT_3" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%" flex-grow="1.0" flex-shrink="1.0"/>
@@ -896,14 +896,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF2A8015"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF2A8015"
                                 caption-color="FFF2F7CF" caption-size="17" caption="pan" flex-align-self="stretch"
                                 parameter="PAN_3" pos-x="1%" pos-y="0.5%" pos-width="44.76%"
                                 pos-height="96.34%"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="FF2A8015" caption-color="FFF2F7CF" caption-size="18"
                                 caption="c.-tuning" parameter="RESERVE_3" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%"/>
@@ -918,7 +918,7 @@
                           <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                   min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                   filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                  slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF2A8015"
+                                  slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF2A8015"
                                   caption-color="00DAFFF5" caption-size="17" caption="mode A" flex-align-self="stretch"
                                   pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                   parameter="SL_MOD_A_3"/>
@@ -934,7 +934,7 @@
                           <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                   max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                   background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                  num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                  num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                   slider-text-outline="FF2A8015" caption-color="00DAFFF5" caption-size="17"
                                   caption="mode B" pos-x="0%" pos-y="0%" pos-width="100%"
                                   pos-height="100%" parameter="SL_MOD_B_3"/>
@@ -955,7 +955,7 @@
                           <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                   min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                   filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                  slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="FF2A8015"
+                                  slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF2A8015"
                                   caption-color="00DAFFF5" caption-size="17" caption="mode C" flex-align-self="stretch"
                                   pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                   parameter="SL_MOD_C_3"/>
@@ -971,7 +971,7 @@
                           <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                   max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                   background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                  num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                  num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                   slider-text-outline="FF2A8015" caption-color="00DAFFF5" caption-size="17"
                                   caption="mode D" pos-x="0%" pos-y="0%" pos-width="100%"
                                   pos-height="100%" parameter="SL_MOD_D_3"/>
@@ -1005,7 +1005,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="FF2A8015" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="FF2A8015" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="FMDEPTH3"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
@@ -1026,7 +1026,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="FF2A8015" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="FF2A8015" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="AMDEPTH3"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
@@ -1037,14 +1037,14 @@
                               background-color="00000000">
                           <Label pos-x="1%" pos-y="0%" pos-width="22%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" text="-1.0" font-size="15"
-                                 background-color="00000000" justification="centred" label-text="FFC5FF2C"/>
+                                 background-color="00000000" justification="centred" label-text="FF73FF2C"/>
                           <Label margin="0" padding="0" border="0" radius="0" pos-width="54%"
                                  pos-x="26%" pos-y="0%" pos-height="100%" background-color="00000000"
                                  label-text="FF99FFCE" font-size="14.5" text="oscShape" justification="centred-bottom"
                                  label-editing-outline=""/>
                           <Label pos-x="82%" pos-y="0%" pos-width="19%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" background-color="00000000"
-                                 font-size="15" text="1.0" label-text="FFC5FF2C" justification="centred-right"/>
+                                 font-size="15" text="1.0" label-text="FF73FF2C" justification="centred-right"/>
                         </View>
                         <Slider slider-textbox="no-textbox" slider-type="linear-horizontal" margin="0"
                                 padding="0" radius="0" pos-width="99%" pos-y="41.5%" pos-height="45%"
@@ -1121,19 +1121,19 @@
                       <Slider pos-width="64%" pos-height="42%" caption="gain WaveTable2" caption-size="15.5"
                               margin="0.5" padding="0" radius="5" background-color="FF244136"
                               border-color="00000000" pos-y="0%" caption-color="FFFFFFFF" slider-text-background="FF000000"
-                              slider-text="FFC5FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
+                              slider-text="FF73FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
                               slider-thumb="FF00FFB3" slider-track="FF00FFB3" parameter="VOLUMEwT_3"/>
                       <Slider pos-width="25%" pos-height="52%" pos-y="48%" pos-x="12%" background-color="FF244136"
                               margin="1" padding="0.5" radius="5" max-height="79" max-width="94"
                               min-height="53.3" min-width="65.8" slider-type="rotary" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
                               caption="filt. B level" slider-text-background="FF060D09" slider-text-outline="FF158071"
-                              slider-text="FFC5FF2C" parameter="ENVWTFLT3"/>
+                              slider-text="FF73FF2C" parameter="ENVWTFLT3"/>
                       <Slider slider-textbox="textbox-below" slider-type="rotary" pos-width="25%"
                               pos-x="40%" margin="1" padding="0.5" radius="5" border-color="00000000"
                               background-color="FF244136" pos-y="48%" pos-height="52%" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
-                              caption="filter reso." slider-text-background="FF060D09" slider-text="FFC5FF2C"
+                              caption="filter reso." slider-text-background="FF060D09" slider-text="FF73FF2C"
                               slider-text-outline="FF158071" max-width="94" max-height="79"
                               min-height="53.3" min-width="65.8" parameter="FILTERRESO3"/>
                       <View pos-width="35%" pos-x="66%" margin="0" padding="0" border="0"
@@ -1154,7 +1154,7 @@
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
                                 num-filmstrip-images="46" caption-color="FFF3F9D1" caption-size="17"
                                 caption="Cutt-off Freq" border-color="00000000" border="0" slider-text-background="FF060D09"
-                                slider-text="FFC5FF2C" slider-text-outline="FF158071" max-width="94"
+                                slider-text="FF73FF2C" slider-text-outline="FF158071" max-width="94"
                                 max-height="79" min-height="53.3" min-width="65.8" parameter="FILTERFREQ3"/>
                       </View>
                     </View>
@@ -1181,7 +1181,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod1.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod1.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_A_2"/>
                       </View>
@@ -1204,7 +1204,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod2.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod2.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_B_2"/>
                       </View>
@@ -1227,7 +1227,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod3.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod3.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_C_2"/>
                       </View>
@@ -1250,7 +1250,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="45%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod4.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod4.2" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_D_2"/>
                       </View>
@@ -1378,14 +1378,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="A9AD7E00"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="A9AD7E00"
                                 caption-color="FFF2F7CF" caption-size="17" caption="f.-tuning"
                                 flex-align-self="stretch" parameter="TUNE_2" pos-width="44.76%"
                                 pos-height="96.34%" pos-x="1%" pos-y="0.5%" flex-grow="1.0" flex-shrink="1.0"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="A9AD7E00" caption-color="FFF2F7CF" caption-size="18"
                                 caption="volume" parameter="VOLUMEwT_2" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%" flex-grow="1.0" flex-shrink="1.0"/>
@@ -1397,14 +1397,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="A9AD7E00"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="A9AD7E00"
                                 caption-color="FFF2F7CF" caption-size="17" caption="pan" flex-align-self="stretch"
                                 parameter="PAN_2" pos-x="1%" pos-y="0.5%" pos-width="44.76%"
                                 pos-height="96.34%"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="A9AD7E00" caption-color="FFF2F7CF" caption-size="18"
                                 caption="c.-tuning" parameter="RESERVE_2" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%"/>
@@ -1419,7 +1419,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="A9AD7E00"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="A9AD7E00"
                                 caption-color="00DAFFF5" caption-size="17" caption="mode A" flex-align-self="stretch"
                                 pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                 parameter="SL_MOD_A_2"/>
@@ -1435,7 +1435,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="A9AD7E00" caption-color="00DAFFF5" caption-size="17"
                                 caption="mode B" pos-x="0%" pos-y="0%" pos-width="100%"
                                 pos-height="100%" parameter="SL_MOD_B_2"/>
@@ -1456,7 +1456,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="A9AD7E00"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="A9AD7E00"
                                 caption-color="00DAFFF5" caption-size="17" caption="mode C" flex-align-self="stretch"
                                 pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                 parameter="SL_MOD_C_2"/>
@@ -1472,7 +1472,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="A9AD7E00" caption-color="00DAFFF5" caption-size="17"
                                 caption="mode D" pos-x="0%" pos-y="0%" pos-width="100%"
                                 pos-height="100%" parameter="SL_MOD_D_2"/>
@@ -1506,7 +1506,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="A9AD7E00" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="A9AD7E00" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="FMDEPTH2"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
@@ -1527,7 +1527,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="A9AD7E00" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="A9AD7E00" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="AMDEPTH2"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
@@ -1538,14 +1538,14 @@
                               background-color="00000000">
                           <Label pos-x="1%" pos-y="0%" pos-width="22%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" text="-1.0" font-size="15"
-                                 background-color="00000000" justification="centred" label-text="FFC5FF2C"/>
+                                 background-color="00000000" justification="centred" label-text="FF73FF2C"/>
                           <Label margin="0" padding="0" border="0" radius="0" pos-width="54%"
                                  pos-x="26%" pos-y="0%" pos-height="100%" background-color="00000000"
                                  label-text="FF99FFCE" font-size="14.5" text="oscShape" justification="centred-bottom"
                                  label-editing-outline=""/>
                           <Label pos-x="82%" pos-y="0%" pos-width="19%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" background-color="00000000"
-                                 font-size="15" text="1.0" label-text="FFC5FF2C" justification="centred-right"/>
+                                 font-size="15" text="1.0" label-text="FF73FF2C" justification="centred-right"/>
                         </View>
                         <Slider slider-textbox="no-textbox" slider-type="linear-horizontal" margin="0"
                                 padding="0" radius="0" pos-width="99%" pos-y="41.5%" pos-height="45%"
@@ -1622,19 +1622,19 @@
                       <Slider pos-width="64%" pos-height="42%" caption="gain WaveTable3" caption-size="15.5"
                               margin="0.5" padding="0" radius="5" background-color="FF244136"
                               border-color="00000000" pos-y="0%" caption-color="FFFFFFFF" slider-text-background="FF000000"
-                              slider-text="FFC5FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
+                              slider-text="FF73FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
                               slider-thumb="FF00FFB3" slider-track="FF00FFB3" parameter="VOLUMEwT_2"/>
                       <Slider pos-width="25%" pos-height="52%" pos-y="48%" pos-x="12%" background-color="FF244136"
                               margin="1" padding="0.5" radius="5" max-height="79" max-width="94"
                               min-height="53.3" min-width="65.8" slider-type="rotary" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
                               caption="filt. B level" slider-text-background="FF060D09" slider-text-outline="FF158071"
-                              slider-text="FFC5FF2C" parameter="ENVWTFLT2"/>
+                              slider-text="FF73FF2C" parameter="ENVWTFLT2"/>
                       <Slider slider-textbox="textbox-below" slider-type="rotary" pos-width="25%"
                               pos-x="40%" margin="1" padding="0.5" radius="5" border-color="00000000"
                               background-color="FF244136" pos-y="48%" pos-height="52%" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
-                              caption="filter reso." slider-text-background="FF060D09" slider-text="FFC5FF2C"
+                              caption="filter reso." slider-text-background="FF060D09" slider-text="FF73FF2C"
                               slider-text-outline="FF158071" max-width="94" max-height="79"
                               min-height="53.3" min-width="65.8" parameter="FILTERRESO2"/>
                       <View pos-width="35%" pos-x="66%" margin="0" padding="0" border="0"
@@ -1655,7 +1655,7 @@
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
                                 num-filmstrip-images="46" caption-color="FFF3F9D1" caption-size="17"
                                 caption="Cutt-off Freq" border-color="00000000" border="0" slider-text-background="FF060D09"
-                                slider-text="FFC5FF2C" slider-text-outline="FF158071" max-width="94"
+                                slider-text="FF73FF2C" slider-text-outline="FF158071" max-width="94"
                                 max-height="79" min-height="53.3" min-width="65.8" parameter="FILTERFREQ2"/>
                       </View>
                     </View>
@@ -1682,7 +1682,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod1.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod1.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_A_3"/>
                       </View>
@@ -1705,7 +1705,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod2.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod2.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_B_3"/>
                       </View>
@@ -1728,7 +1728,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod3.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod3.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_C_3"/>
                       </View>
@@ -1751,7 +1751,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="45%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod4.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod4.3" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_D_3"/>
                       </View>
@@ -1878,14 +1878,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="8A676EFF"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="8A676EFF"
                                 caption-color="FFF2F7CF" caption-size="17" caption="f.-tuning"
                                 flex-align-self="stretch" parameter="TUNE_4" pos-width="44.76%"
                                 pos-height="96.34%" pos-x="1%" pos-y="0.5%" flex-grow="1.0" flex-shrink="1.0"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="8A676EFF" caption-color="FFF2F7CF" caption-size="18"
                                 caption="volume" parameter="VOLUMEwT_4" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%" flex-grow="1.0" flex-shrink="1.0"/>
@@ -1897,14 +1897,14 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="8A676EFF"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="8A676EFF"
                                 caption-color="FFF2F7CF" caption-size="17" caption="pan" flex-align-self="stretch"
                                 parameter="PAN_4" pos-x="1%" pos-y="0.5%" pos-width="44.76%"
                                 pos-height="96.34%"/>
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="8A676EFF" caption-color="FFF2F7CF" caption-size="18"
                                 caption="c.-tuning" parameter="RESERVE_4" pos-x="46.5%" pos-y="0.5%"
                                 pos-width="44.76%" pos-height="96.34%"/>
@@ -1919,7 +1919,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="8A676EFF"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="8A676EFF"
                                 caption-color="00DAFFF5" caption-size="17" caption="mode A" flex-align-self="stretch"
                                 pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                 parameter="SL_MOD_A_4"/>
@@ -1935,7 +1935,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="8A676EFF" caption-color="00DAFFF5" caption-size="17"
                                 caption="mode B" pos-x="0%" pos-y="0%" pos-width="100%"
                                 pos-height="100%" parameter="SL_MOD_B_4"/>
@@ -1956,7 +1956,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF1D3738"
                                 min-width="65.8" max-width="94" min-height="53.3" max-height="79"
                                 filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-background="FF060D09" slider-text="FFC5FF2C" slider-text-outline="8A676EFF"
+                                slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="8A676EFF"
                                 caption-color="00DAFFF5" caption-size="17" caption="mode C" flex-align-self="stretch"
                                 pos-x="0%" pos-y="0%" pos-width="100%" pos-height="100%"
                                 parameter="SL_MOD_C_4"/>
@@ -1972,7 +1972,7 @@
                         <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                                 max-height="79" flex-align-self="stretch" min-width="65.8" max-width="94"
                                 background-color="FF1D3738" filmstrip="strip_slider_128_bgr_png"
-                                num-filmstrip-images="46" slider-text="FFC5FF2C" slider-text-background="FF060D09"
+                                num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                                 slider-text-outline="8A676EFF" caption-color="00DAFFF5" caption-size="17"
                                 caption="mode D" pos-x="0%" pos-y="0%" pos-width="100%"
                                 pos-height="100%" parameter="SL_MOD_D_4"/>
@@ -2006,7 +2006,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="8A676EFF" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="8A676EFF" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="FMDEPTH4"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
@@ -2027,7 +2027,7 @@
                                 margin="1" padding="0.5" radius="5" max-width="94" max-height="79"
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
-                                slider-text-outline="8A676EFF" slider-text="FFC5FF2C" caption-color="FFF2F7CF"
+                                slider-text-outline="8A676EFF" slider-text="FF73FF2C" caption-color="FFF2F7CF"
                                 caption-size="18" caption="depth" parameter="AMDEPTH4"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
@@ -2038,14 +2038,14 @@
                               background-color="00000000">
                           <Label pos-x="1%" pos-y="0%" pos-width="22%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" text="-1.0" font-size="15"
-                                 background-color="00000000" justification="centred" label-text="FFC5FF2C"/>
+                                 background-color="00000000" justification="centred" label-text="FF73FF2C"/>
                           <Label margin="0" padding="0" border="0" radius="0" pos-width="54%"
                                  pos-x="26%" pos-y="0%" pos-height="100%" background-color="00000000"
                                  label-text="FF99FFCE" font-size="14.5" text="oscShape" justification="centred-bottom"
                                  label-editing-outline=""/>
                           <Label pos-x="82%" pos-y="0%" pos-width="19%" pos-height="100%" margin="0"
                                  padding="0" border="0" radius="0" background-color="00000000"
-                                 font-size="15" text="1.0" label-text="FFC5FF2C" justification="centred-right"/>
+                                 font-size="15" text="1.0" label-text="FF73FF2C" justification="centred-right"/>
                         </View>
                         <Slider slider-textbox="no-textbox" slider-type="linear-horizontal" margin="0"
                                 padding="0" radius="0" pos-width="99%" pos-y="41.5%" pos-height="45%"
@@ -2122,19 +2122,19 @@
                       <Slider pos-width="64%" pos-height="42%" caption="gain WaveTable4" caption-size="15.5"
                               margin="0.5" padding="0" radius="5" background-color="FF244136"
                               border-color="00000000" pos-y="0%" caption-color="FFFFFFFF" slider-text-background="FF000000"
-                              slider-text="FFC5FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
+                              slider-text="FF73FF2C" slider-text-outline="FF158071" slider-background="0000FF46"
                               slider-thumb="FF00FFB3" slider-track="FF00FFB3" parameter="VOLUMEwT_4"/>
                       <Slider pos-width="25%" pos-height="52%" pos-y="48%" pos-x="12%" background-color="FF244136"
                               margin="1" padding="0.5" radius="5" max-height="79" max-width="94"
                               min-height="53.3" min-width="65.8" slider-type="rotary" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
                               caption="filt. B level" slider-text-background="FF060D09" slider-text-outline="FF158071"
-                              slider-text="FFC5FF2C" parameter="ENVWTFLT4"/>
+                              slider-text="FF73FF2C" parameter="ENVWTFLT4"/>
                       <Slider slider-textbox="textbox-below" slider-type="rotary" pos-width="25%"
                               pos-x="40%" margin="1" padding="0.5" radius="5" border-color="00000000"
                               background-color="FF244136" pos-y="48%" pos-height="52%" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
-                              caption="filter reso." slider-text-background="FF060D09" slider-text="FFC5FF2C"
+                              caption="filter reso." slider-text-background="FF060D09" slider-text="FF73FF2C"
                               slider-text-outline="FF158071" max-width="94" max-height="79"
                               min-height="53.3" min-width="65.8" parameter="FILTERRESO4"/>
                       <View pos-width="35%" pos-x="66%" margin="0" padding="0" border="0"
@@ -2155,7 +2155,7 @@
                                 background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
                                 num-filmstrip-images="46" caption-color="FFF3F9D1" caption-size="17"
                                 caption="Cutt-off Freq" border-color="00000000" border="0" slider-text-background="FF060D09"
-                                slider-text="FFC5FF2C" slider-text-outline="FF158071" max-width="94"
+                                slider-text="FF73FF2C" slider-text-outline="FF158071" max-width="94"
                                 max-height="79" min-height="53.3" min-width="65.8" parameter="FILTERFREQ4"/>
                       </View>
                     </View>
@@ -2182,7 +2182,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod1.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod1.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_A_4"/>
                       </View>
@@ -2205,7 +2205,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod2.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod2.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_B_4"/>
                       </View>
@@ -2228,7 +2228,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="43%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod3.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod3.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_C_4"/>
                       </View>
@@ -2251,7 +2251,7 @@
                       </View>
                       <View pos-x="55%" pos-y="0%" pos-width="45%" border="0" margin="0" padding="0.4" radius="0" background-color="00194A50"
                             max-height="18" min-height="18" max-width="77.2" min-width="54" display="contents" flex-direction="row">
-                        <ParameterValueLabelItem id="lfoMod4.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF5abeff" font-size="16"
+                        <ParameterValueLabelItem id="lfoMod4.4" pos-y="9.01%" pos-width="80%" pos-height="88%" label-text="FF00E7FF" font-size="16"
                                                  border-color="889C2FAED" border="0.51" justification="centred" background-color="FF000000" pos-x="11%"
                                                  margin="0" padding="0" radius="0" parameter="SL_MOD_D_LFO_D_4"/>
                       </View>
@@ -3353,7 +3353,7 @@
                             min-height="53.3" min-width="65.8" slider-type="rotary" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
                             caption="filter level" slider-text-background="FF060D09" slider-text-outline="8A676EFF"
-                            slider-text="FFC5FF2C" parameter="SAMPLE_ENVWTFLT"/>
+                            slider-text="FF73FF2C" parameter="SAMPLE_ENVWTFLT"/>
                     <Label height="" pos-height="12%" margin="0" padding="0" border="0"
                            radius="0" pos-x="10%" pos-y="3%" border-color="00000000" background-color="00000000"
                            text="Sample Filter" flex-align-self="stretch" justification="centred"
@@ -3362,7 +3362,7 @@
                             pos-x="36%" margin="1" padding="0.5" radius="5" border-color="00000000"
                             background-color="FF244136" pos-y="37%" pos-height="61%" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFEFF5C8" caption-size="17"
-                            caption="filter reso." slider-text-background="FF060D09" slider-text="FFC5FF2C"
+                            caption="filter reso." slider-text-background="FF060D09" slider-text="FF73FF2C"
                             slider-text-outline="8A676EFF" max-width="94" max-height="79"
                             min-height="53.3" min-width="65.8" parameter="SAMPLE_FILTERRESO"/>
                     <View pos-width="35%" pos-x="65%" margin="0" padding="0" border="0"
@@ -3379,12 +3379,12 @@
                               background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" caption-color="FFF3F9D1" caption-size="17"
                               caption="Cutt-off Freq" border-color="00000000" border="0" slider-text-background="FF060D09"
-                              slider-text="FFC5FF2C" slider-text-outline="8A676EFF" max-width="94"
+                              slider-text="FF73FF2C" slider-text-outline="8A676EFF" max-width="94"
                               max-height="79" min-height="53.3" min-width="65.8" parameter="SAMPLE_FILTERFREQ"/>
                     </View>
                   </View>
                   <Slider slider-type="rotary" pos-width="23%" pos-height="63%" pos-x="76%"
-                          pos-y="32.8%" slider-text-background="FF001309" slider-text="FFA1FF21"
+                          pos-y="32.8%" slider-text-background="FF001309" slider-text="FF73FF2C"
                           caption-size="20" caption-color="FFE1E0C0" caption="volume" margin="1"
                           padding="0.5" radius="5" background-color="FF244136" slider-text-outline="FF007762"
                           filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
@@ -3538,7 +3538,7 @@
                     padding="0.5" border="0.8" radius="5" background-color="FF1C302B"
                     border-color="FF008A4F" display="contents" flex-direction="column">
                 <Slider slider-type="rotary" pos-width="68%" pos-height="36%" pos-x="16%"
-                        pos-y="7%" slider-text-background="FF001309" slider-text="FFA1FF21"
+                        pos-y="7%" slider-text-background="FF001309" slider-text="FF73FF2C"
                         caption-size="20" caption-color="FFE1E0C0" caption="volume" margin="1"
                         padding="0.5" radius="5" background-color="FF213A28" slider-text-outline="FF007762"
                         filmstrip="strip_slider_128_ggr_png" num-filmstrip-images="46"
@@ -3572,7 +3572,7 @@
                   background-color="0F000000">
               <Slider slider-type="rotary" parameter="SPECTRO_TIME" border-color="FF192E20"
                       background-color="FF213A28" margin="1" padding="12" border="2.6"
-                      radius="5" slider-text-background="FF001609" slider-text="FFA1FF21"
+                      radius="5" slider-text-background="FF001609" slider-text="FF73FF2C"
                       slider-text-outline="FF007762" lookAndFeel="FoleysFinest" caption="Time"
                       caption-color="FFFDFCE8" caption-size="21"/>
             </View>
@@ -3918,7 +3918,7 @@
                           pos-x="36.5%" margin="1" padding="0.8" radius="5" background-color="FF243430"
                           caption-size="19" caption-color="D3F3F8CF" caption="Damping"
                           slider-text-background="FF000000" slider-text-outline="FF067B00"
-                          slider-text="FF58FF27" parameter="" filmstrip="strip_slider_128_bgr_png"
+                          slider-text="FF58FF27" parameter="EFF_REVERB_DAMPIMG" filmstrip="strip_slider_128_bgr_png"
                           num-filmstrip-images="46" border="1.2" border-color="FF000000"/>
                   <Slider slider-type="rotary" pos-width="28%" pos-height="49%" pos-y="50.5%"
                           pos-x="65.5%" margin="1" padding="0.8" radius="5" background-color="FF243430"
