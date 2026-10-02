@@ -105,8 +105,8 @@
         std::array<float, 4> filterEnvAmount = {0.0f, 0.0f, 0.0f};
         std::array<bool, 6> lfoActive = {true, true, true, true, true, true};
         std::array<bool, 4> wtActive  = {true, true, true, true};
-        std::array<bool, 4> filterIsEnabled  = {true, true, true, true};
-        std::array<bool, 4> lastFiterIsEnabled  = {true, true, true, true};
+        std::array<bool, 4> filterIsEnabled  = {false, false, false, false};
+        std::array<bool, 4> lastFiterIsEnabled  = {false, false, false, false};
         //==============================================================================
         // sine wave: return std::sin(x);
         // saw wave: return x / juce::MathConstants<float>::pi;

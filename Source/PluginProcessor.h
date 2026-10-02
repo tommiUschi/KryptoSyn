@@ -67,6 +67,7 @@ struct PropertySamplerBrowseListener;
 struct ParameterVarLambdaListener;
 struct PropertyLfoModulCoreActiveListener;
 struct ParameterDepthLambdaListener;
+//struct PropertySubPagesListener;
 struct PixelUpdate;
 class PropertySpectroListener : public juce::Value::Listener
 {
@@ -289,47 +290,6 @@ public:
     juce::File getSampleBaseDir() const;
     juce::String samplFile;
     //__________________________________________________
-    // helper function: Finds files on Linux, ignoring case and backslashes
-    /*static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
-    {
-        juce::String cleanPath = relativePath.replaceCharacter ('\\', '/').trim();
-        if (cleanPath.isEmpty()) return {};
-
-        juce::File direct = root.getChildFile (cleanPath);
-        if (direct.existsAsFile())
-            return direct;
-
-        juce::StringArray components;
-        components.addTokens (cleanPath, "/", "");
-
-        juce::File current = root;
-        for (const auto& comp : components)
-        {
-            if (comp.isEmpty() || comp == ".") continue;
-            if (comp == "..") { current = current.getParentDirectory(); continue; }
-
-            juce::File exactChild = current.getChildFile (comp);
-            if (exactChild.exists())
-            {
-                current = exactChild;
-            }
-            else
-            {
-                bool found = false;
-                for (const auto& entry : juce::RangedDirectoryIterator (current, false, "*", juce::File::findFilesAndDirectories))
-                {
-                    if (entry.getFile().getFileName().equalsIgnoreCase (comp))
-                    {
-                        current = entry.getFile();
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) return {};
-            }
-        }
-        return current.existsAsFile() ? current : juce::File();
-    }*/
 static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
 {
     // 1. Normalisieren: Backslashes umwandeln und Trimmen
@@ -567,6 +527,7 @@ private:
     void InitJuceWtFilterParameters();
     void InitLfoModeParameters();
     void InitializeWTOscTriggers();
+    void setSubPageProperties(int index);
     void InitializeGainFilterTriggers();
     void InitializeSynthFilterActiveTriggers();
     void InitializeKeybBigSmallTriggers();
@@ -729,6 +690,7 @@ private:
         juce::AudioParameterChoice* waveParam = nullptr;  // Index 0 to 15
         // the 4 mod knobs (A, B, C, D) as continuous values
         std::array<juce::AudioParameterFloat*, 4> modKnobs;
+        std::array<juce::AudioParameterFloat*, 4> modKnobsDisplayLfos;
 
         juce::AudioParameterFloat* volumeWTParams = nullptr;
         juce::AudioParameterFloat* oscillatorShape = nullptr;
@@ -816,9 +778,12 @@ private:
 #pragma endregion MASTER
 
 #pragma region GUI
-    // for the GUI:
-    juce::AudioParameterChoice* viewIndexParam = nullptr;
-    juce::AudioParameterInt* viewIndexParamInt = nullptr;
+    // Hält den aktuellen LFO-Ausgabewert für die GUI (0.0f bis 1.0f)
+    std::array<std::atomic <float>, 4> lfoVisualValuesPage1 { 0.0f, 0.0f, 0.0f, 0.0f };
+    std::array<std::atomic <float>, 4> lfoVisualValuesPage2 { 0.0f, 0.0f, 0.0f, 0.0f };
+    std::array<std::atomic <float>, 4> lfoVisualValuesPage3 { 0.0f, 0.0f, 0.0f, 0.0f };
+    std::array<std::atomic <float>, 4> lfoVisualValuesPage4 { 0.0f, 0.0f, 0.0f, 0.0f };
+    //
     juce::AudioParameterBool* switchTimerParamBool = nullptr;
     foleys::MagicGUIBuilder* myBuilder = nullptr;
     std::unique_ptr<juce::LookAndFeel> lookAndFeelTab = nullptr;
@@ -915,7 +880,6 @@ private:
     foleys::MagicAnalyser* analyser = nullptr;
     // counter to throttle (down) the graphics updates
     int samplesSinceLastUpdate = 0;
-
     std::unique_ptr<WindowSizeLocker> sizeLocker;
     juce::Component::SafePointer<juce::DocumentWindow> standaloneWindow;
 

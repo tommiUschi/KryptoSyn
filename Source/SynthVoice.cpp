@@ -385,7 +385,7 @@ void SynthVoice::setWtActive(const int index, const bool active)
     wtActive[index]  = active;
 }
 
-void SynthVoice::setFilterEnabled(int index, bool active)
+void SynthVoice::setFilterEnabled(const int index, const bool active)
 {
     std::array<bool, 4> currentActivationState;
     currentActivationState[index] = active;

@@ -347,7 +347,7 @@ void Container::updateTabbedRightButtons()
     }
 
     tabbedButtons->addChangeListener (this);
-    tabbedButtons->setCurrentTabIndex (currentTab.getValue(), false);
+    tabbedButtons->setCurrentTabIndex (currentTab.getValue(), true);
     updateSelectedTab();
 }
 
