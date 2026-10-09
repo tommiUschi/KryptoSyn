@@ -3305,7 +3305,7 @@
             </View>
           </View>
 
-          <View id="Samples" name="Samples" caption="Sample-Bibliothek" caption-size="0"
+          <View id="Samples" name="Samples" caption="Sample-Libr." caption-size="0"
                 margin="0" padding="0" border="0" radius="0" focus-container="focus-none"
                 flex-align-self="start" background-color="FF1A2B2E" caption-color="FF53FFEA"
                 pos-x="0.02%" pos-y="5%" pos-width="99.8%" pos-height="99.8%"
@@ -3518,7 +3518,7 @@
               </View>
             </View>
           </View>
-          <View id="SpectroSynth" name="SpectroSynth" caption="Spectro Synth"
+          <View id="SpectroSynth" name="SpectroSynth" caption="Spect. Synth"
                 caption-size="0" margin="0" padding="0" border="0" radius="0"
                 focus-container="focus-none" flex-align-self="start" background-color="FF1A2B2E"
                 caption-color="FF53FFEA" pos-x="0.02%" pos-y="5%" pos-width="99.8%"
@@ -3593,7 +3593,7 @@
                      font-size="16" label-text="FF99f6e2" flex-align-self="start" justification="centred-left"/>
             </View>
           </View>
-          <View id="Modulation" name="Modulation" caption="Modulation" caption-size="0"
+          <View id="Modulation" name="Modulation" caption="Modul." caption-size="0"
                 margin="0" padding="0" border="0" radius="0" focus-container="focus-none"
                 flex-align-self="start" background-color="FF1A2B2E" caption-color="FF53FFEA"
                 pos-x="0.02%" pos-y="5%" pos-width="99.8%" pos-height="99.8%"
@@ -3948,6 +3948,142 @@
               </View>
             </View>
           </View>
+          <View id="WT-Gen" name="WT-Gen" caption="WT-Gen." caption-size="0"
+                margin="0" padding="0" border="0" radius="0" focus-container="focus-none"
+                flex-align-self="start" background-color="FF1A2B2E" caption-color="FF53FFEA"
+                pos-x="0.02%" pos-y="0%" pos-width="99.8%" pos-height="99.8%"
+                width="" height="" min-width="610.4" min-height="400" max-width="872"
+                max-height="571" display="contents">
+            <View display="contents" pos-height="100%" pos-width="100%" background-color="FF182C29"
+                  margin="0.5" padding="0.5" border="0.8" radius="5" border-color="FF172927"
+                  id="" caption-size="0" pos-x="0%" pos-y="0%" caption="" flex-direction="column">
+              <View display="contents" pos-height="100%" pos-width="100%" background-color="00182C29"
+                    flex-direction="column">
+                <View display="contents" pos-height="5%" pos-width="100%" background-color="00182C29"
+                      flex-direction="row" border="0" margin="0" padding="0" radius="0">
+                  <Label justification="centred" pos-height="92%" pos-width="30%" pos-x="35%" pos-y="4%" background-color="00000000"
+                      margin="0" padding="0" border="0" radius="0" label-text="FFd9ecec" font-size="19" text="Wave-Table Generator"/>
+                </View>
+
+                <View flex-direction="row" pos-width="100%" margin="1.5" padding="0.2"
+                      border="0.8" radius="5" pos-height="41%" pos-x="0%" pos-y="6.5%"
+                      display="contents" id="" background-color="00182927" border-color="FF005758">
+
+                  <View margin="1" padding="1" border="0.5" radius="5" border-color="661C342F"
+                        background-color="001C342F" max-width="212" max-height="350" pos-width="29%" pos-y="0%" pos-x="0%" pos-height="99.5%"
+                        flex-grow="1.0" flex-shrink="1.0" min-height="245" min-width="148.4"
+                        display="contents">
+                        <View margin="1" padding="1" border="0.8" radius="5" background-color="FF172a26"
+                              pos-width="78%" pos-height="47%" pos-x="11%" border-color="FF005758" pos-y="25%"
+                              flex-direction="row" display="contents">
+                          <View margin="0.5" padding="0.5" border="0" radius="0" background-color="FF182927"
+                                pos-width="63%" pos-height="100%" pos-x="0%" pos-y="0%"
+                                flex-direction="column" display="contents">
+                            <View margin="0.5" padding="0" border="0" radius="0" pos-width="100%" pos-height="27%"
+                                  pos-x="0%" pos-y="0.2" background-color="FF172a26" display="contents">
+                              <Label pos-width="96%" pos-x="2%" pos-y="6%" pos-height="94%" margin="1"
+                                     padding="1" border="0" radius="5" background-color="00000000"
+                                     label-text="FFF9F3E4" font-size="16" justification="centred"
+                                     text="Start WTgeneration:" border-color="FF038A95"/>
+                            </View>
+                            <View margin="0.5" padding="0" border="0" radius="0" pos-width="100%" pos-height="72%"
+                                  pos-x="0%" pos-y="27.4" background-color="FF172a26" display="contents">
+
+                              <ToggleButton id="sampleToggle" property="startGenWT" pos-height="78%" pos-width="88%"
+                                            pos-x="6%" pos-y="8" lookAndFeel="CustomLNFButton" margin="3"
+                                            padding="1" border="0.6" radius="5" border-color="FF19C700" background-color="00000000"
+                                            text="Start"/>
+                            </View>
+
+                          </View>
+                          <View margin="0.5" padding="0.5" border="0" radius="0" background-color="FF182927"
+                                pos-width="34%" pos-height="100%" pos-x="63.5%" pos-y="0%" display="contents"
+                                flex-direction="column">
+                            <View margin="0.5" padding="0" border="0" radius="0" pos-width="100%" pos-height="27%"
+                                  pos-x="0%" pos-y="0.2" background-color="FF172a26" display="contents">
+
+                            </View>
+                            <View margin="0.5" padding="0" border="0" radius="0" pos-width="100%" pos-height="72%"
+                                  pos-x="0%" pos-y="27.4" background-color="FF172a26" display="contents">
+                              <View pos-width="90%" pos-height="64%" pos-x="5%" pos-y="20%" background-color="FF000000"
+                                    margin="0.5" padding="4" border="0" radius="5" flex-align-self="stretch" text=""
+                                    flex-grow="1.0" flex-shrink="1.0" display="contents">
+                                <ToggleButton id="sGenLED" property="startGenWT" pos-width="90%" pos-height="78%"
+                                              pos-x="5.3%" pos-y="10.5%" lookAndFeel="CustomLedLNF" background-color="FF000000"
+                                              margin="2.5" padding="0" border="0" radius="0" text=""
+                                              flex-grow="1.0" flex-shrink="1.0"/>
+                              </View>
+
+                            </View>
+                          </View>
+                        </View>
+
+                  </View>
+                  <!-- Sliders-->
+                  <View margin="1" padding="1" border="0.5" radius="5" border-color="FF182927"
+                        background-color="FF1C342F" flex-direction="column" max-width="212"
+                        max-height="350" pos-width="32%" pos-y="0%" pos-x="29%" pos-height="99.5%"
+                        flex-grow="1.0" flex-shrink="1.0" min-height="245" min-width="148.4"
+                        display="contents">
+                    <View margin="1" padding="0" border="0" radius="0" min-width="147"
+                          min-height="57.4" max-height="90" background-color="FF1C342F"
+                          max-width="210" flex-align-self="stretch" pos-width="100%"
+                          pos-x="0.3%" pos-y="0%" pos-height="49.5%" display="contents">
+                      <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
+                              min-width="65.8" max-width="94" min-height="53.3" max-height="83"
+                              filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
+                              slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
+                              caption-color="FFF2F7CF" caption-size="17" caption="Spectral Tilt"
+                              flex-align-self="stretch" parameter="" pos-width="48.76%"
+                              pos-height="100%" pos-x="0.5%" pos-y="0%" flex-grow="1.0" flex-shrink="1.0"/>
+                      <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
+                              max-height="83" flex-align-self="stretch" min-width="65.8" max-width="94"
+                              background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
+                              num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
+                              slider-text-outline="FF158071" caption-color="FFF2F7CF" caption-size="18"
+                              caption="OddOnlyRatio" parameter="" pos-x="50%" pos-y="0%"
+                              pos-width="48.76%" pos-height="100%" flex-grow="1.0" flex-shrink="1.0"/>
+                    </View>
+                    <View margin="1" padding="0" border="0" radius="0" min-width="147"
+                          min-height="57.4" max-height="90" background-color="FF1C342F"
+                          max-width="210" flex-align-self="stretch" pos-x="0.3%" pos-y="50.5%"
+                          pos-width="100%" pos-height="49.5%" display="contents">
+                      <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" background-color="FF244136"
+                              min-width="65.8" max-width="94" min-height="53.3" max-height="83"
+                              filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
+                              slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
+                              caption-color="FFF2F7CF" caption-size="17" caption="PhaseSpread" flex-align-self="stretch"
+                              parameter="" pos-x="0.5%" pos-y="0%" pos-width="48.76%"
+                              pos-height="100%"/>
+                      <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
+                              max-height="83" flex-align-self="stretch" min-width="65.8" max-width="94"
+                              background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
+                              num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
+                              slider-text-outline="FF158071" caption-color="FFF2F7CF" caption-size="18"
+                              caption="morphDrift" parameter="" pos-x="50%" pos-y="0%"
+                              pos-width="48.76%" pos-height="100%"/>
+                    </View>
+                  </View>
+                  <View pos-height="98%" pos-y="0.5%" pos-x="61.4%" margin="1" padding="0.5" border="0" border-color="FF005758"
+                        pos-width="38%" radius="5" background-color="661C342F" display="contents">
+
+                  </View>
+
+                </View>
+                <View pos-width="100%" margin="1" padding="0.2"
+                      border="0.8" radius="5" pos-height="49%" pos-x="0%" pos-y="50.5%"
+                      display="contents" id="" background-color="FF182927" border-color="FF005758">
+                  <Label pos-width="36%" pos-x="27%" pos-y="34%" pos-height="20%" margin="1"
+                         padding="1" border="0" radius="5" background-color="00000000"
+                         label-text="FFF9F3E4" font-size="22" justification="centred"
+                         text="Commin Soon!" border-color="FF038A95"/>
+                </View>
+              </View>
+
+
+            </View>
+
+        </View>
           <View id="Master" name="Master" caption="Master" margin="0" padding="0"
                 border="0" radius="0" focus-container="focus-none" flex-align-self="start"
                 background-color="FF19292C" caption-color="FF53FFEA" pos-x="0.02%"

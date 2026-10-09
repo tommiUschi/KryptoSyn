@@ -28,18 +28,18 @@ public:
         fileBox.onChange        = [this] { triggerInstrumentSelection(); }; // <-- NEU!
 #else
         baseDir = juce::File::getSpecialLocation(juce::File::currentExecutableFile)
-            .getParentDirectory()      // Standalone
-            .getParentDirectory()      // Release
+            .getParentDirectory()      // standalone
+            .getParentDirectory()      // release
             .getChildFile("SynthLabSamples");
         if (!baseDir.exists()) {
             baseDir = juce::File (hardCodedPath);
         }
         juce::String configFilePath = baseDir.getFullPathName();
-        // EINMALIGES Laden der Ignore-Liste beim Erstellen der Komponente:
+        // load the ignore list ONCE when creating the component:
         juce::File configFile = baseDir.getChildFile (configFilePath+"/sfz_ignore.txt");
         if (!sfzFilter.loadIgnoreListFromFile (configFile))
         {
-            // Fallback-Regeln, falls Datei nicht existiert:
+            // fallback rules if the file does not exist:
             sfzFilter.addRule ("*.inc.sfz");
             sfzFilter.addRule ("*_header.sfz");
             sfzFilter.addRule ("*_opcodes.sfz");
@@ -180,18 +180,18 @@ private:
 
         int id = 1;
         juce::Array<juce::File> sfzFiles;
-        // Ordner nach SFZ-Dateien durchsuchen
+        // search folders for SFZ files
         for (const auto& entry : juce::RangedDirectoryIterator (finalDir, false, "*.sfz", juce::File::findFiles))
         {
             juce::File file = entry.getFile();
-            // Filter anwenden: 'baseDir' als Wurzel übergeben (oder weglassen)
+            // apply filter: pass 'baseDir' as the root (or omit it)
             if (sfzFilter.shouldIgnore (file, baseDir))
             {
-                continue; // Include-, Header- oder ungültige SFZ-Dateien überspringen
+                continue; // skip include, header, or invalid SFZ files
             }
             sfzFiles.add (file);
         }
-        // Gefundene saubere SFZ-Dateien in die ComboBox füllen
+        // populate the ComboBox with the clean SFZ files found
         if (!sfzFiles.isEmpty()) {
             for (const auto& sfz : sfzFiles)
             {
@@ -199,7 +199,7 @@ private:
             }
         }
         else {
-            // Fallback für alte WAV-Ordnerstruktur
+            // fallback for 'old' WAV folder structure
             for (const auto& entry : juce::RangedDirectoryIterator (finalDir, false, "*.wav", juce::File::findFiles))
                 fileBox.addItem (entry.getFile().getFileName(), id++);
         }

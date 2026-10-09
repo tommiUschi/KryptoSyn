@@ -40,6 +40,12 @@ Regarding this, please note the following:
 
 [KryptoSyn Screenshot9](docs/sampleTut.png)
 
+## comming soon
+A new module is in the planning stage: a page for a "WabeTable" generator designed to create WAV files in the "Serum" standard.
+
+[KryptoSyn Screenshot10](docs/page9.png)
+
+
 ## Features
 
 You can find a good description here: [instructions](/Resources/Instructions.Text.txt)

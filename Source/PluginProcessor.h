@@ -67,7 +67,6 @@ struct PropertySamplerBrowseListener;
 struct ParameterVarLambdaListener;
 struct PropertyLfoModulCoreActiveListener;
 struct ParameterDepthLambdaListener;
-//struct PropertySubPagesListener;
 struct PixelUpdate;
 class PropertySpectroListener : public juce::Value::Listener
 {
@@ -290,63 +289,52 @@ public:
     juce::File getSampleBaseDir() const;
     juce::String samplFile;
     //__________________________________________________
+
+    //helper-method to read out samples from the structure:
 static juce::File findPathCaseInsensitive (const juce::File& root, const juce::String& relativePath)
 {
-    // 1. Normalisieren: Backslashes umwandeln und Trimmen
+    // normalize: convert backslashes and trim
     juce::String cleanPath = relativePath.replaceCharacter ('\\', '/').trim();
     if (cleanPath.isEmpty())
         return {};
-
-    // 2. Absolute Pfade abfangen (über statische JUCE-Funktion)
+    // intercept absolute paths (via static JUCE function)
     if (juce::File::isAbsolutePath (cleanPath))
     {
         juce::File directFile (cleanPath);
         if (directFile.existsAsFile())
             return directFile;
-
-        // Falls absoluter Pfad ungültig ist (z. B. fremde Laufwerksbuchstaben C:\...),
-        // nutzen wir nur den Dateinamen für die spätere Relativsuche weiter.
+        // if the absolute path is invalid (e.g., foreign drive letters like C:\...),
+        // we only use the filename for the subsequent relative search
         cleanPath = directFile.getFileName();
     }
-
-    // 3. Führende Slashes entfernen, damit 'root' bei getChildFile nicht ignoriert wird
+    // Remove leading slashes so that 'root' is not ignored by getChildFile
     while (cleanPath.startsWithChar ('/'))
         cleanPath = cleanPath.substring (1);
-
     if (cleanPath.isEmpty())
         return {};
-
-    // 4. Schnellpfad: Exakte Übereinstimmung relativ zu root
+    // fast path: Exact match relative to root
     juce::File direct = root.getChildFile (cleanPath);
     if (direct.existsAsFile())
         return direct;
-
-    // 5. Pfad-Komponenten zerlegen
+    // Decompose path components
     juce::StringArray components;
     components.addTokens (cleanPath, "/", "");
-
     juce::File current = root;
 
     for (const auto& comp : components)
     {
         if (comp.isEmpty() || comp == ".")
             continue;
-
-        if (comp == "..")
-        {
+        if (comp == "..") {
             current = current.getParentDirectory();
             continue;
         }
-
-        // Exakten Treffer für die aktuelle Ebene prüfen
+        // check for an exact match for the current level
         juce::File exactChild = current.getChildFile (comp);
-        if (exactChild.exists())
-        {
+        if (exactChild.exists()) {
             current = exactChild;
-        }
-        else
-        {
-            // Case-Insensitive Suche im aktuellen Verzeichnis
+        } else {
+            // case-insensitive search in the current directory
             bool found = false;
             for (const auto& entry : juce::RangedDirectoryIterator (current, false, "*", juce::File::findFilesAndDirectories))
             {
@@ -357,12 +345,10 @@ static juce::File findPathCaseInsensitive (const juce::File& root, const juce::S
                     break;
                 }
             }
-
             if (!found)
-                return {}; // Pfadebene existiert nicht
+                return {}; // path layer does not exist
         }
     }
-
     return current.existsAsFile() ? current : juce::File();
 }
 
@@ -527,7 +513,6 @@ private:
     void InitJuceWtFilterParameters();
     void InitLfoModeParameters();
     void InitializeWTOscTriggers();
-    void setSubPageProperties(int index);
     void InitializeGainFilterTriggers();
     void InitializeSynthFilterActiveTriggers();
     void InitializeKeybBigSmallTriggers();
@@ -715,7 +700,7 @@ private:
     // the central database for all wavetables
     std::shared_ptr<SynthLab::WavetableDatabase> wavetableDatabase;
     std::shared_ptr<SynthLab::MidiInputData> midiInputData;
-    // NEU: Master-Oszillator als Member halten, damit die Cores im Speicher bleiben:
+    // keep the master oscillator as a member so that the cores remain in memory:
     std::shared_ptr<SynthLab::WTOscParameters> masterOscParams;
     std::shared_ptr<SynthLab::WTOscillator> masterOscillator;
     // individual buffer for each of the 7 oscillators (for the individual Meters)
@@ -778,7 +763,7 @@ private:
 #pragma endregion MASTER
 
 #pragma region GUI
-    // Hält den aktuellen LFO-Ausgabewert für die GUI (0.0f bis 1.0f)
+    // holds the current LFO output value for the GUI (0.0f to 1.0f)
     std::array<std::atomic <float>, 4> lfoVisualValuesPage1 { 0.0f, 0.0f, 0.0f, 0.0f };
     std::array<std::atomic <float>, 4> lfoVisualValuesPage2 { 0.0f, 0.0f, 0.0f, 0.0f };
     std::array<std::atomic <float>, 4> lfoVisualValuesPage3 { 0.0f, 0.0f, 0.0f, 0.0f };

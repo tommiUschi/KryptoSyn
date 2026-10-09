@@ -3,7 +3,7 @@
 #include "DynamicLabelItem.h"
 
 
-// kleine Hilfsfunktion zum Parsen der JUCE-Textausrichtung
+// small helper function for parsing JUCE text alignment
 static juce::Justification parseJustification(const juce::String& str)
 {
     if (str == "top-left")       return juce::Justification::topLeft;
@@ -37,16 +37,16 @@ std::vector<foleys::SettableProperty> DynamicLabelItem::getSettableProperties() 
 
 void DynamicLabelItem::update()
 {
-    // lesen, welche Property im XML angegeben wurde (z.B. property="SL_MOD_A_1_caption")
+    // read which property was specified in the XML (e.g., property="SL MOD_A_1_caption")
     const auto propName = getProperty("property").toString();
 
     if (propName.isNotEmpty())
     {
-        // JUCE verbindet den Text des Labels nativ mit dem Value aus magicState
+        // JUCE natively links the label's text to the value from magicState
         label.getTextValue().referTo(getMagicState().getPropertyAsValue(propName));
     }
 
-    // textfarbe aus "label-text" lesen
+    // read text color from "label-text" (property in 'foleys_gui_magic')
     const auto colorVar = getProperty("label-text");
     if (!colorVar.isVoid())
     {
@@ -54,7 +54,6 @@ void DynamicLabelItem::update()
         label.setColour(juce::Label::textColourId, col);
     }
 
-    // schriftgröße aus "font-size" lesen
     const auto sizeVar = getProperty("font-size");
     if (!sizeVar.isVoid())
     {
@@ -62,14 +61,12 @@ void DynamicLabelItem::update()
         label.setFont(juce::Font(fontSize));
     }
 
-    // ausrichtung aus "justification" lesen (z.B. "top-left")
     const auto allignVar = getProperty("justification");
     if (!allignVar.isVoid())
     {
         const juce::String& justification = allignVar.toString();
         label.setJustificationType(parseJustification(allignVar.toString()));
     }
-
 
 }
 

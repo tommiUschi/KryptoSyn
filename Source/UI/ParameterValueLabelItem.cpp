@@ -1,5 +1,7 @@
 #include "ParameterValueLabelItem.h"
 
+// similar like 'DynamicLabelItem'
+
 static juce::Justification parseJustification(const juce::String& str)
 {
     if (str == "top-left")       return juce::Justification::topLeft;

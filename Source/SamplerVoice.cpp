@@ -21,12 +21,6 @@ void SamplerVoice::startNote (int midiNoteNumber, float velocity, juce::Synthesi
         sampleGainAdsr.noteOn();
         sampleFilterAdsr.noteOn();
         samplerFilter->reset();
-
-        /*std::cout << "[Voice Start] Note: " << midiNoteNumber
-          << " | Root: " << zoneSound->rootMidiNote
-          << " | Speed-Faktor: " << pitchFactor
-          << " | Buffer-Dauer (s): " << (zoneSound->audioBuffer.getNumSamples() / zoneSound->originalSampleRate)
-          << std::endl;*/
     }
     else {
         activeSound = nullptr;
@@ -35,7 +29,6 @@ void SamplerVoice::startNote (int midiNoteNumber, float velocity, juce::Synthesi
 
 void SamplerVoice::stopNote (float, bool allowTailOff)
 {
-    //std::cout << "[Voice Stop] NoteOff empfangen (allowTailOff=" << (allowTailOff ? "true" : "false") << ")" << std::endl;
     if (allowTailOff) {
         sampleGainAdsr.noteOff();
         sampleFilterAdsr.noteOff();
