@@ -117,7 +117,7 @@ void SynthVoice::prepareToPlay(double sampleRate, int samplesPerBlock, int outpu
     spec.sampleRate       = sampleRate;
     spec.maximumBlockSize = static_cast<uint32_t>(samplesPerBlock);
     spec.numChannels      = static_cast<uint32_t>(outputChannels);
-    currentFilterSpec = spec; // fuer spaetere Slot-Wechsel merken
+    currentFilterSpec = spec; // save for later slot changes
 
     for (int ind = 0; ind < 4; ++ind)
     {
@@ -425,6 +425,11 @@ void SynthVoice::prepare (double sampleRate, int maxBlockSize, int outputChannel
     spec.maximumBlockSize = static_cast<uint32_t> (maxBlockSize);
     spec.numChannels      = static_cast<uint32_t> (outputChannels);
     currentFilterSpec     = spec;
+    // prepare Lfo
+    juce::dsp::ProcessSpec specLfo;
+    specLfo.sampleRate       = sampleRate;
+    specLfo.maximumBlockSize = static_cast<uint32_t>(maxBlockSize);
+    specLfo.numChannels      = static_cast<uint32_t>(outputChannels);
 
     for (int ind = 0; ind < 4; ++ind)
     {
@@ -440,6 +445,18 @@ void SynthVoice::prepare (double sampleRate, int maxBlockSize, int outputChannel
     for (int i = 0; i < 4; ++i) {
         wtMeterBuffers[i].setSize (outputChannels, maxBlockSize, false, false, true);
         wtMeterBuffers[i].clear();
+    }
+    for (int ind = 0; ind < 4; ind ++)
+    {
+        lfoFmData[ind].prepareToPlayOsc(specLfo);
+        lfoAmData[ind].prepareToPlayOsc(specLfo);
+        lfoFmData[ind].setFMParams(7.0f, 180.0f);
+        lfoAmData[ind].setAMParams(7.0f, 180.0f);
+    }
+    for (int ind = 0; ind < 4; ind ++)
+    {
+        lfoFmData[ind].reset();
+        lfoAmData[ind].reset();
     }
     isPrepared = true;
 }

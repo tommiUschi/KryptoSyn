@@ -220,6 +220,21 @@ struct PropertyMinusButListener : public juce::Value::Listener {
     juce::Value valueToListen;
     std::function<void()> onClickCallback;
 };
+struct PropertyWTGenButListener : public juce::Value::Listener {
+    PropertyWTGenButListener (juce::Value v, std::function<void(bool)> callback)
+        : valueToListen (v), onChanchedCallback (std::move(callback)) {
+        valueToListen.addListener (this);
+    }
+    ~PropertyWTGenButListener() override {
+        valueToListen.removeListener (this);
+    }
+    void valueChanged (juce::Value& v) override {
+        if (onChanchedCallback)
+            onChanchedCallback (static_cast<bool>(v.getValue()));
+    }
+    juce::Value valueToListen;
+    std::function<void(bool)> onChanchedCallback;
+};
 struct PropertyAnalysButListener : public juce::Value::Listener {
     PropertyAnalysButListener (juce::Value v, std::function<void(bool)> callback)
         : valueToListen (v), onChanchedCallback (std::move(callback)) {
@@ -582,6 +597,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     // == modul core-modulation =====================================================
     InitLfoModeParameters();
     //===============================================================================
+    // == WT-GEN ====================================================================
+    InitWaveTableGenParameters();
 #pragma region GUI_TRIGGERS
 
     // not yet used
@@ -677,6 +694,11 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
         else if (currentPreProcessorReplacement == PreProcessorReplacement::VST3)
             setExplicitGuiSize (0.70f);
     });
+
+    /*magicState.addTrigger ("start_wt_gen", [this]
+    {
+        TriggerStartWtGeneration();
+    });*/
     //
 #pragma endregion GUI_TRIGGERS
 
@@ -704,6 +726,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     InitializeSynthFilterActiveTriggers();
     InitializeLfoModuleCoreActiveTriggers();
     InitDynamicLabelsDepthTriggers();
+    InitTriggerWTGenParams();
     *bothAnalysersActiveParam = false;
     // =====================================/
 #ifdef _DEBUG
@@ -987,11 +1010,20 @@ void AudioPluginAudioProcessor::prepareToPlay (const double sampleRate, const in
     zeroBuffer.setSize (getTotalNumOutputChannels(), samplesPerBlock);
     zeroBuffer.clear();
 
+    //WaveTable-Generation
+    WTConfig.spectralTilt = (* waveTablePtrs.spectralTiltPtr);
+    WTConfig.oddOnlyRatio = (* waveTablePtrs.oddOnlyRatioPtr);
+    WTConfig.phaseSpread = (* waveTablePtrs.phaseSpreadPtr);
+    WTConfig.morphDrift = (* waveTablePtrs.morphDriftPtr);
+    WTConfig.startGen = (*waveTablePtrs.startGenPtr) = false;
+    WTConfig.randomSeed = 1337;
+
     wasAnalyserActive = false;
     silenceBlocksToPush = 0;
     // absolutely reliable reset for the FFT analyzer buffer
     fftAccumulatorIndex = 0;
     fftAccumulatorBuffer.fill (0.0f);
+
     // set the slow LFO (which replaces the ADSR) to a slow modulation frequency
     lfoMasterFilterModSlow.setAMFrequency (0.75f);
     filterGlitch.reset();
@@ -1070,18 +1102,19 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     std::array<LocalParams, 4> locSnapShot;
 
     int currentLfoFmWaveForm[4];
-    int currentLfoAmWaveForm[4]; int currentFilterType[4];
+    int currentLfoAmWaveForm[4];
+    int currentFilterType[4];
     for (int inx = 0; inx < 4; inx++){
-        currentLfoFmWaveForm[inx] = juceLfoFmParams[inx].lfoFmWaveFormParam->getIndex();
-        currentLfoAmWaveForm[inx] = juceLfoAmParams[inx].lfoAmWaveFormParam->getIndex();
+        currentLfoFmWaveForm[inx] = juceLfoFmParams[inx].lfoFmWaveFormParamFm->getIndex();
+        currentLfoAmWaveForm[inx] = juceLfoAmParams[inx].lfoAmWaveFormParamAm->getIndex();
         currentFilterType[inx] = synthLabOscParams[inx].filterTypeParam->getIndex();
     }
 
     for (int inx = 0; inx < 4; inx++) {
-        const float _freqLfoFm = (*juceLfoFmParams[inx].lfoFmFreqParam);
-        const float _depthLfoFm = (*juceLfoFmParams[inx].lfoFmDepthParam);
-        const float _freqLfoAm = (*juceLfoAmParams[inx].lfoAmFreqParam);
-        const float _depthLfoAm = (*juceLfoAmParams[inx].lfoAmDepthParam);
+        const float _freqLfoFm = *juceLfoFmParams[inx].lfoFmFreqParamFm;
+        const float _depthLfoFm = *juceLfoFmParams[inx].lfoFmDepthParamFm;
+        const float _freqLfoAm = *juceLfoAmParams[inx].lfoAmFreqParamAm;
+        const float _depthLfoAm = *juceLfoAmParams[inx].lfoAmDepthParamAm;
         const int _currentLfoFmWaveFormIndex = currentLfoFmWaveForm[inx];
         if (_currentLfoFmWaveFormIndex != lastLfoFmWaveForm[inx])
         {
@@ -1090,7 +1123,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         }
         lastLfoFmWaveForm[inx] = currentLfoFmWaveForm[inx];
         for (auto* voice : myVoices) {
-            voice->getFmLfo(inx).setFMParams(_freqLfoFm, _depthLfoFm);
+            voice->updateFmParams(_freqLfoFm, _depthLfoFm, inx);
 
         }
         const int _currentLfoAmWaveFormIndex = currentLfoAmWaveForm[inx];
@@ -1100,7 +1133,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         }
         lastLfoAmWaveForm[inx] = _currentLfoAmWaveFormIndex;
         for (auto* voice : myVoices){
-            voice->getAmLfo(inx).setAMParams(_freqLfoAm, _depthLfoAm);
+            voice->updateAmParams(_freqLfoAm, _depthLfoAm, inx);
         }
     }
     for (int inx = 0; inx < 4; inx++) {
@@ -2263,7 +2296,7 @@ void AudioPluginAudioProcessor::InitMasterModualtionParams()
         juce::ParameterID ("LFO_FM_WAVE_MASTER", 1), pNameLfoFmWaveMaster,
         juce::StringArray{"sine", "saw", "square"}, 0));
     //Lfo Freq
-    juce::NormalisableRange<float> fmFreqRangeMaster(0.0f, 1000.0f, 0.1f);
+    juce::NormalisableRange<float> fmFreqRangeMaster(0.0f, 100.0f, 0.2f);
     auto pNameFmFreqMaster = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoFmFreqMaster "));
     addParameter(fmFreqMaster = new juce::AudioParameterFloat(
         juce::ParameterID ("LFOFMFREQ_MASTER", 1), pNameFmFreqMaster,
@@ -2283,9 +2316,7 @@ void AudioPluginAudioProcessor::InitMasterModualtionParams()
         20.0f, juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction([](const float value, int)
         {
-            if (value >= 1000.0f)
-                return juce::String(value / 1000.0f, 2);
-            return juce::String(value, 0);
+            return juce::String(value, 1);
         })
         .withValueFromStringFunction([](const juce::String& text)
         {
@@ -2772,36 +2803,18 @@ void AudioPluginAudioProcessor::InitLfoParameters()
     for (int ind = 0; ind < 4; ++ind)
     {
         auto suffixLfo = juce::String(ind + 1);
-        auto rangeLFOvolume = juce::NormalisableRange<float>(-60.0f, 12.0f, 0.1f);
-        rangeLFOvolume.skew = std::log(0.5f) /
-                       std::log((-8.5f - (-60.0f)) / (12.0f - (-60.0f)));
-        auto pNameLfoVolumeParam = juce::String::fromUTF8(
-            reinterpret_cast<const char*>(u8"Gain FM Lfo ")) + suffixLfo;
-        addParameter(juceLfoFmParams[ind].lfoFmGainParam =
-            new juce::AudioParameterFloat(
-                juce::ParameterID("GAIN_Fm_Lfo_" + suffixLfo, 1),
-                pNameLfoVolumeParam,
-                rangeLFOvolume,
-                -8.5f,
-                juce::AudioParameterFloatAttributes()
-                    .withStringFromValueFunction([](const float val, int) {
-                        return val <= -59.0f ? "-INF" : juce::String(val, 1) + " dB";
-                    })
-                    .withValueFromStringFunction([](const juce::String& text) {
-                        return text.getFloatValue();
-                    })
-            ));
 
-        // Lfo Waveform
-        auto pNameLfoFmWave = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Fm Wave ")) + suffixLfo;
-        addParameter(juceLfoFmParams[ind].lfoFmWaveFormParam = new juce::AudioParameterChoice(
-        juce::ParameterID ("LFO_FM_WAVE" + suffixLfo, 1), pNameLfoFmWave,
+
+        // Lfo Fm Waveform
+        auto pNameLfoFmWaveFm = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Fm WaveFm ")) + suffixLfo;
+        addParameter(juceLfoFmParams[ind].lfoFmWaveFormParamFm = new juce::AudioParameterChoice(
+        juce::ParameterID ("LFO_FM_WAVE_FM_" + suffixLfo, 1), pNameLfoFmWaveFm,
         juce::StringArray{"sine", "saw", "square"}, std::min(ind, 2)));
-        //Lfo Freq
-        juce::NormalisableRange<float> fmFreqRange(0.0f, 1000.0f, 0.1f);
-        auto pNameFmFreq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoFmFreq ")) + suffixLfo;
-        addParameter(juceLfoFmParams[ind].lfoFmFreqParam = new juce::AudioParameterFloat(
-            juce::ParameterID ("LFOFMFREQ" + suffixLfo, 1),
+        //Lfo FM Freq
+        juce::NormalisableRange<float> fmFreqRange(0.0f, 100.0f, 0.2f);
+        auto pNameFmFreq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoFmFreq Fm")) + suffixLfo;
+        addParameter(juceLfoFmParams[ind].lfoFmFreqParamFm = new juce::AudioParameterFloat(
+            juce::ParameterID ("LFOFMFREQ_FM_" + suffixLfo, 1),
             pNameFmFreq,
             fmFreqRange, 7.0f, juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int)
@@ -2812,16 +2825,14 @@ void AudioPluginAudioProcessor::InitLfoParameters()
             })
         ));
 
-        auto pNameFmDepth = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"FmDepth ")) + suffixLfo;
-        juce::NormalisableRange<float> fmDepthRange(0.0f, 200.0f, 0.1f, 0.4f);
-        addParameter(juceLfoFmParams[ind].lfoFmDepthParam = new juce::AudioParameterFloat(
-            juce::ParameterID ("FMDEPTH" + suffixLfo, 1),
-            pNameFmDepth, fmDepthRange,
-            20.0f, juce::AudioParameterFloatAttributes()
+        auto pNameFmDepthFm = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"FmDepth Fm")) + suffixLfo;
+        juce::NormalisableRange<float> fmDepthRangeFm(0.0f, 200.0f, 0.1f);
+        addParameter(juceLfoFmParams[ind].lfoFmDepthParamFm = new juce::AudioParameterFloat(
+            juce::ParameterID ("FMDEPTH_FM_" + suffixLfo, 1),
+            pNameFmDepthFm, fmDepthRangeFm,
+            50.0f, juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int)
             {
-                if (value >= 1000.0f)
-                    return juce::String(value / 1000.0f, 2);
                 return juce::String(value, 0);
             })
             .withValueFromStringFunction([](const juce::String& text)
@@ -2830,36 +2841,22 @@ void AudioPluginAudioProcessor::InitLfoParameters()
             })
         ));
     }
+    // =======================================================================================================================
     // am-modulation
     for (int ind = 0; ind < 4; ++ind)
     {
         auto suffixLfo = juce::String(ind + 1);
-        auto rangeLFOvolume = juce::NormalisableRange<float>(-60.0f, 12.0f, 0.1f);
-        rangeLFOvolume.skew = std::log(0.5f) /
-                       std::log((-8.5f - (-60.0f)) / (12.0f - (-60.0f)));
-        auto pNameLfoVolumeParam = juce::String::fromUTF8(
-            reinterpret_cast<const char*>(u8"Gain AM Lfo ")) + suffixLfo;
-        addParameter(juceLfoAmParams[ind].lfoAmGainParam =
-            new juce::AudioParameterFloat(
-                juce::ParameterID("GAIN_Am_Lfo_" + suffixLfo, 1),
-                pNameLfoVolumeParam, rangeLFOvolume, -8.5f, juce::AudioParameterFloatAttributes()
-                    .withStringFromValueFunction([](const float val, int) {
-                        return val <= -59.0f ? "-INF" : juce::String(val, 1) + " dB";
-                    })
-                    .withValueFromStringFunction([](const juce::String& text) {
-                        return text.getFloatValue();
-                    })
-            ));
-        // Lfo Waveform
-        auto pNameLfoAmWave = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"Lfo Am Wave ")) + suffixLfo;
-        addParameter(juceLfoAmParams[ind].lfoAmWaveFormParam = new juce::AudioParameterChoice(
-        juce::ParameterID ("LFO_AM_WAVE" + suffixLfo, 1), pNameLfoAmWave,
+
+        // Lfo FreqWaveform
+        auto pNameLfoAmWave = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoAm Wave Am")) + suffixLfo;
+        addParameter(juceLfoAmParams[ind].lfoAmWaveFormParamAm = new juce::AudioParameterChoice(
+        juce::ParameterID ("LFO_AM_WAVE_AM_" + suffixLfo, 1), pNameLfoAmWave,
         juce::StringArray{"sine", "saw", "square"}, 3-ind));
         //Lfo Freq
-        juce::NormalisableRange<float> amFreqRange(0.0f, 20.0f, 0.01f, 0.35f);
-        auto pNameAmFreq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoAmFreq ")) + suffixLfo;
-        addParameter(juceLfoAmParams[ind].lfoAmFreqParam = new juce::AudioParameterFloat(
-            juce::ParameterID ("LFOAMFREQ" + suffixLfo, 1),
+        juce::NormalisableRange<float> amFreqRange(0.0f, 100.0f, 0.02);
+        auto pNameAmFreq = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoAmFreq Am")) + suffixLfo;
+        addParameter(juceLfoAmParams[ind].lfoAmFreqParamAm = new juce::AudioParameterFloat(
+            juce::ParameterID ("LFOAMFREQ_AM_" + suffixLfo, 1),
             pNameAmFreq,  amFreqRange, 2.5f, juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int)
             {
@@ -2869,15 +2866,13 @@ void AudioPluginAudioProcessor::InitLfoParameters()
             })
         ));
 
-        auto pNameAmDepth = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"AmDepth ")) + suffixLfo;
-        juce::NormalisableRange<float> amDepthRange(0.0f, 100.0f, 0.1f, 0.4f);
-        addParameter(juceLfoAmParams[ind].lfoAmDepthParam = new juce::AudioParameterFloat(
-            juce::ParameterID ("AMDEPTH" + suffixLfo, 1),
-            pNameAmDepth, amDepthRange, 18.0f, juce::AudioParameterFloatAttributes()
+        auto pNameAmDepthAm = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"LfoAmDepth Am")) + suffixLfo;
+        juce::NormalisableRange<float> amDepthRangAm(0.0f, 200.0f, 0.1f, 0.4f);
+        addParameter(juceLfoAmParams[ind].lfoAmDepthParamAm = new juce::AudioParameterFloat(
+            juce::ParameterID ("AMDEPTH_AM_" + suffixLfo, 1),
+            pNameAmDepthAm, amDepthRangAm, 50.0f, juce::AudioParameterFloatAttributes()
             .withStringFromValueFunction([](const float value, int)
             {
-                if (value >= 1000.0f)
-                    return juce::String(value / 1000.0f, 2);
                 return juce::String(value, 0);
             })
             .withValueFromStringFunction([](const juce::String& text)
@@ -3140,7 +3135,74 @@ void AudioPluginAudioProcessor::InitEffekteParameters()
             (juce::ParameterID ("EFF_ACTIVE_" + suffixEffects, 1), pNameEffIsActivatedParam, false));
     }
 }
-#pragma endregion INIT_PARAMS
+
+
+void AudioPluginAudioProcessor::InitWaveTableGenParameters()
+{
+    auto pNameWTGenSpectralTiltPtr = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"WTGen Spectr Tilt "));
+    juce::NormalisableRange<float> pNameWTGenSpectralTiltRange(0.5f, 2.0f, 0.01f, 1.0f);
+    addParameter(waveTablePtrs.spectralTiltPtr = new juce::AudioParameterFloat(
+        juce::ParameterID ("WT_GEN_SPECTR_TILT", 1),
+        pNameWTGenSpectralTiltPtr, pNameWTGenSpectralTiltRange, 1.2f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            return juce::String(value, 2);
+        })
+        .withValueFromStringFunction([](const juce::String& text)
+        {
+            return text.getFloatValue();
+        })
+    ));
+
+    auto pNameWTGenOddOnlyRatioPtr = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"WTGen OddOnly Rat "));
+    juce::NormalisableRange<float> pNameWTGenOddOnlyRatioRange(0.0f, 1.0f, 0.005f, 0.5f);
+    addParameter(waveTablePtrs.oddOnlyRatioPtr = new juce::AudioParameterFloat(
+        juce::ParameterID ("WT_GEN_ODD_ONLYRAT", 1),
+        pNameWTGenOddOnlyRatioPtr, pNameWTGenOddOnlyRatioRange, 0.5f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            return juce::String(value, 2);
+        })
+        .withValueFromStringFunction([](const juce::String& text)
+        {
+            return text.getFloatValue();
+        })
+    ));
+
+    auto pNameWTGenPhaseSpreadPtr = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"WTGen Phase Spread "));
+    juce::NormalisableRange<float> pNameWTGenPhaseSpreadRange(0.0f, 1.0f, 0.005f, 0.5f);
+    addParameter(waveTablePtrs.phaseSpreadPtr = new juce::AudioParameterFloat(
+        juce::ParameterID ("WT_GEN_PHASE_SPREAD", 1),
+        pNameWTGenPhaseSpreadPtr, pNameWTGenPhaseSpreadRange, 0.2f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            return juce::String(value, 2);
+        })
+        .withValueFromStringFunction([](const juce::String& text)
+        {
+            return text.getFloatValue();
+        })
+    ));
+
+    auto pNameWTGenMorphDriftPtr = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"WTGen Morphe Drift "));
+    juce::NormalisableRange<float> pNameWTGenMorphDriftPtrRange(0.0f, 1.0f, 0.001f, 0.05f);
+    addParameter(waveTablePtrs.morphDriftPtr = new juce::AudioParameterFloat(
+        juce::ParameterID ("WT_GEN_MORPH_DRIFT", 1),
+        pNameWTGenMorphDriftPtr, pNameWTGenMorphDriftPtrRange, 0.02f, juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction([](const float value, int)
+        {
+            return juce::String(value, 3);
+        })
+        .withValueFromStringFunction([](const juce::String& text)
+        {
+            return text.getFloatValue();
+        })
+    ));
+
+    auto pNameWTGenStartGenParam = juce::String::fromUTF8 (reinterpret_cast<const char*> (u8"WTGen StartGen "));
+    addParameter(waveTablePtrs.startGenPtr = new juce::AudioParameterBool
+        (juce::ParameterID ("WT_GEN_START_GEN", 1), pNameWTGenStartGenParam, false));
+}
 
 #pragma region TRIGGER_METHODS
 void AudioPluginAudioProcessor::InitializeWTOscTriggers()
@@ -3243,6 +3305,25 @@ void AudioPluginAudioProcessor::InitializeGainFilterTriggers()
         ));
         propValue.setValue(initVal);
     }
+}
+
+void AudioPluginAudioProcessor::InitTriggerWTGenParams()
+{
+    // delete any old listeners (in case the tree is reloaded)
+    MyPropertyWTGenButListeners.clear();
+    juce::String propName = "startGenWT";
+    const bool initVal = waveTablePtrs.startGenPtr->get();
+    auto propValue = magicState.getPropertyAsValue(propName);
+
+    MyPropertyWTGenButListeners.push_back (std::make_unique<PropertyWTGenButListener> (
+        propValue,
+        [this] (bool newValue)
+        {
+            if (auto* p = waveTablePtrs.startGenPtr) {
+                TriggerStartWtGeneration();
+                p->setValueNotifyingHost (newValue ? 1.0f : 0.0f);}
+        }));
+    propValue.setValue(initVal);
 }
 
 // switch fiter function on off
@@ -3592,6 +3673,91 @@ void AudioPluginAudioProcessor::TriggerKeyBoard()
     ChangeKeyBoard();
 }
 
+
+void AudioPluginAudioProcessor::TriggerStartWtGeneration()
+{
+    /*const int currentWTGenStart = waveTablePtrs.startGenPtr->get();
+    if (firstInit)
+    {
+        lastStartWTGen = true;
+        firstInit = false;
+    } else if(lastStartWTGen!= currentWTGenStart && !firstInit)
+    {
+        switch (currentWTGenStart)
+        {
+            case true:
+            //std::cout << "true " << std::endl;
+                break;
+            case false:
+            //std::cout << "false " << std::endl;
+                RunWTGeneration();
+                break;
+            default:
+                {
+                     break;
+                }
+        }   
+
+    }
+    lastStartWTGen = currentWTGenStart;*/
+}
+
+void AudioPluginAudioProcessor::RunWTGeneration()
+{
+    /*WTConfig.spectralTilt = (* waveTablePtrs.spectralTiltPtr);
+    WTConfig.oddOnlyRatio = (* waveTablePtrs.oddOnlyRatioPtr);
+    WTConfig.phaseSpread = (* waveTablePtrs.phaseSpreadPtr);
+    WTConfig.morphDrift = (* waveTablePtrs.morphDriftPtr);
+    WTConfig.startGen = (*waveTablePtrs.startGenPtr) = false;
+    WTConfig.randomSeed = 1337;*/
+#ifdef _DEBUG
+    wtTargetDirectory = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/Wav_Wavetables/");
+#else
+    /*auto pluginBinary = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    wtTargetDirectory = pluginBinary.getParentDirectory()
+                                         .getChildFile ("/Wav_Wavetables/");*/
+#endif
+    /*wtTargetDirectory = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/Wav_Wavetables/");
+    const auto genWTfile = wtTargetDirectory;
+        //.getChildFile("HyperHollow_2048.wav");
+
+    const bool result = AdditiveNoteSampleGenerator::generateNoteSet(genWTfile, WTConfig);
+    std::cout << "result: " << result << std::endl;
+    juce::String propName = "startGenWT";
+
+    //const bool initVal = waveTablePtrs.startGenPtr->get();
+    auto propValue = magicState.getPropertyAsValue(propName);
+    MyPropertyWTGenButListeners.push_back (std::make_unique<PropertyWTGenButListener> (
+    propValue,[this] (bool newVal)
+    {
+        if (juce::AudioParameterBool* p = waveTablePtrs.startGenPtr) {
+            p->setValueNotifyingHost (newVal ? 1.0f : 0.0f);
+        }
+    }));*/
+    /*if (result)
+    {
+        juce::ValueTree node = magicState.getValueTree();
+        if ( node.hasProperty("startGenWT"))
+        {
+            auto val = magicState.getPropertyAsValue ("startGenWT");
+            //const auto val = magicState.getProperty (prop);
+            bool isAct = false;
+
+            if (auto boolVal = val.getValue().isBool())
+                isAct = static_cast<bool> (boolVal);
+            else if (val.getValue().isInt() || val.getValue().isInt64())
+                isAct = (static_cast<int> (boolVal) != 0);
+            else
+                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
+
+            if (auto* p = waveTablePtrs.startGenPtr)
+                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
+
+            juce::String propName = "startGenWT";
+            magicState.getPropertyAsValue (propName).setValue (isAct);
+        }
+    }*/
+}
 //= begin serialization ======================================================================
 // ── save ────────────────────────────────────────────────
 // save preset as an XML file
@@ -3862,15 +4028,13 @@ void AudioPluginAudioProcessor::saveLfoParams(juce::ValueTree& parent) const
     for (int i = 0; i < 4; ++i) {
         juce::ValueTree node ("LFO");
         node.setProperty ("index", i, nullptr);
-        if (juceLfoFmParams[i].lfoFmWaveFormParam) node.setProperty ("fmWaveIndex", juceLfoFmParams[i].lfoFmWaveFormParam->getIndex(), nullptr);
-        if (juceLfoFmParams[i].lfoFmGainParam) node.setProperty ("fmGain",      static_cast<float> (*juceLfoFmParams[i].lfoFmGainParam), nullptr);
-        if (juceLfoFmParams[i].lfoFmFreqParam) node.setProperty ("fmFreq",      static_cast<float> (*juceLfoFmParams[i].lfoFmFreqParam), nullptr);
-        if (juceLfoFmParams[i].lfoFmDepthParam) node.setProperty ("fmDepth",     static_cast<float> (*juceLfoFmParams[i].lfoFmDepthParam), nullptr);
+        if (juceLfoFmParams[i].lfoFmWaveFormParamFm) node.setProperty ("fmWaveIndex", juceLfoFmParams[i].lfoFmWaveFormParamFm->getIndex(), nullptr);
+        if (juceLfoFmParams[i].lfoFmFreqParamFm) node.setProperty ("fmFreq",      static_cast<float> (*juceLfoFmParams[i].lfoFmFreqParamFm), nullptr);
+        if (juceLfoFmParams[i].lfoFmDepthParamFm) node.setProperty ("fmDepth",     static_cast<float> (*juceLfoFmParams[i].lfoFmDepthParamFm), nullptr);
 
-        if(juceLfoAmParams[i].lfoAmWaveFormParam) node.setProperty ("amWaveIndex", juceLfoAmParams[i].lfoAmWaveFormParam->getIndex(), nullptr);
-        if(juceLfoAmParams[i].lfoAmGainParam) node.setProperty ("amGain",      static_cast<float> (*juceLfoAmParams[i].lfoAmGainParam), nullptr);
-        if(juceLfoAmParams[i].lfoAmFreqParam) node.setProperty ("amFreq",      static_cast<float> (*juceLfoAmParams[i].lfoAmFreqParam), nullptr);
-        if(juceLfoAmParams[i].lfoAmDepthParam) node.setProperty ("amDepth",     static_cast<float> (*juceLfoAmParams[i].lfoAmDepthParam), nullptr);
+        if(juceLfoAmParams[i].lfoAmWaveFormParamAm) node.setProperty ("amWaveIndex", juceLfoAmParams[i].lfoAmWaveFormParamAm->getIndex(), nullptr);
+        if(juceLfoAmParams[i].lfoAmFreqParamAm) node.setProperty ("amFreq",      static_cast<float> (*juceLfoAmParams[i].lfoAmFreqParamAm), nullptr);
+        if(juceLfoAmParams[i].lfoAmDepthParamAm) node.setProperty ("amDepth",     static_cast<float> (*juceLfoAmParams[i].lfoAmDepthParamAm), nullptr);
         group.addChild (node, -1, nullptr);
     }
     parent.addChild (group, -1, nullptr);
@@ -4226,28 +4390,22 @@ void AudioPluginAudioProcessor::loadLfoParams(const juce::ValueTree& parent)
         if (i < 0 || i >= 4) continue;
 
         if (node.hasProperty ("fmWaveIndex"))
-            *juceLfoFmParams[i].lfoFmWaveFormParam = static_cast<int> (node.getProperty ("fmWaveIndex"));
-
-        if (node.hasProperty ("fmGain"))
-            *juceLfoFmParams[i].lfoFmGainParam = static_cast<float> (node.getProperty ("fmGain"));
+            *juceLfoFmParams[i].lfoFmWaveFormParamFm = static_cast<int> (node.getProperty ("fmWaveIndex"));
 
         if (node.hasProperty ("fmFreq"))
-            *juceLfoFmParams[i].lfoFmFreqParam = static_cast<float> (node.getProperty ("fmFreq"));
+            *juceLfoFmParams[i].lfoFmFreqParamFm = static_cast<float> (node.getProperty ("fmFreq"));
 
         if (node.hasProperty ("fmDepth"))
-            *juceLfoFmParams[i].lfoFmDepthParam = static_cast<float> (node.getProperty ("fmDepth"));
+            *juceLfoFmParams[i].lfoFmDepthParamFm = static_cast<float> (node.getProperty ("fmDepth"));
 
         if (node.hasProperty ("amWaveIndex"))
-            *juceLfoAmParams[i].lfoAmWaveFormParam = static_cast<int> (node.getProperty ("amWaveIndex"));
-
-        if (node.hasProperty ("amGain"))
-            *juceLfoAmParams[i].lfoAmGainParam = static_cast<float> (node.getProperty ("amGain"));
+            *juceLfoAmParams[i].lfoAmWaveFormParamAm = static_cast<int> (node.getProperty ("amWaveIndex"));
 
         if (node.hasProperty ("amFreq"))
-            *juceLfoAmParams[i].lfoAmFreqParam = static_cast<float> (node.getProperty ("amFreq"));
+            *juceLfoAmParams[i].lfoAmFreqParamAm = static_cast<float> (node.getProperty ("amFreq"));
 
         if (node.hasProperty ("amDepth"))
-            *juceLfoAmParams[i].lfoAmDepthParam = static_cast<float> (node.getProperty ("amDepth"));
+            *juceLfoAmParams[i].lfoAmDepthParamAm = static_cast<float> (node.getProperty ("amDepth"));
     }
 }
 

@@ -495,7 +495,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE1"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_FM_1"/>
                       </View>
                       <View pos-y="17%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -505,7 +505,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="FF158071" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="FMDEPTH1"/>
+                                caption-size="18" caption="depth" parameter="FMDEPTH_FM_1"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
                             border="0.5" radius="5" border-color="00000000" background-color="FF244136"
@@ -516,7 +516,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE1"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_AM_1"/>
                       </View>
                       <View pos-y="59%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -526,7 +526,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="FF158071" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="AMDEPTH1"/>
+                                caption-size="18" caption="depth" parameter="AMDEPTH_AM_1"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
                             margin="0.7" padding="0" border="0.7" radius="5" background-color="95244136"
@@ -996,7 +996,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF60E200"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF60E200"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE4"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_FM_3"/>
                       </View>
                       <View pos-y="17%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -1006,7 +1006,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="FF2A8015" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="FMDEPTH3"/>
+                                caption-size="18" caption="depth" parameter="FMDEPTH_FM_3"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
                             border="0.5" radius="5" border-color="00000000" background-color="FF244136"
@@ -1017,7 +1017,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF60E200"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF60E200"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE4"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_AM_3"/>
                       </View>
                       <View pos-y="59%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -1027,7 +1027,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="FF2A8015" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="AMDEPTH3"/>
+                                caption-size="18" caption="depth" parameter="AMDEPTH_AM_"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
                             margin="0.7" padding="0" border="0.7" radius="5" background-color="95244136"
@@ -1497,7 +1497,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FFFF9900"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FFFF9900"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE2"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_FM_2"/>
                       </View>
                       <View pos-y="17%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -1507,7 +1507,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="A9AD7E00" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="FMDEPTH2"/>
+                                caption-size="18" caption="depth" parameter="FMDEPTH_FM_2"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
                             border="0.5" radius="5" border-color="00000000" background-color="FF244136"
@@ -1518,7 +1518,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FFFF9900"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FFFF9900"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE2"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_AM_2"/>
                       </View>
                       <View pos-y="59%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -1528,7 +1528,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="A9AD7E00" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="AMDEPTH2"/>
+                                caption-size="18" caption="depth" parameter="AMDEPTH_AM_2"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
                             margin="0.7" padding="0" border="0.7" radius="5" background-color="95244136"
@@ -1997,7 +1997,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF4B17FF"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF7469FF"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE4"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_FM_4"/>
                       </View>
                       <View pos-y="17%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -2007,7 +2007,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="8A676EFF" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="FMDEPTH4"/>
+                                caption-size="18" caption="depth" parameter="FMDEPTH_FM_4"/>
                       </View>
                       <View pos-width="96%" pos-x="2%" pos-height="17.5%" margin="2" padding="1"
                             border="0.5" radius="5" border-color="00000000" background-color="FF244136"
@@ -2018,7 +2018,7 @@
                         <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF4B17FF"
                                   margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                   combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF7469FF"
-                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE4"/>
+                                  lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_AM_4"/>
                       </View>
                       <View pos-y="59%" pos-x="2%" pos-width="96%" pos-height="26%" margin="2"
                             padding="1" border="0.5" radius="5" border-color="00000000" background-color="00244136"
@@ -2028,7 +2028,7 @@
                                 min-height="53.3" min-width="65.8" pos-y="1.5%" pos-x="10%" pos-width="80%"
                                 pos-height="97%" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                                 slider-text-outline="8A676EFF" slider-text="FF73FF2C" caption-color="FFF2F7CF"
-                                caption-size="18" caption="depth" parameter="AMDEPTH4"/>
+                                caption-size="18" caption="depth" parameter="AMDEPTH_AM_4"/>
                       </View>
                       <View pos-height="16.5%" pos-y="85.3%" pos-width="100%" pos-x="0%"
                             margin="0.7" padding="0" border="0.7" radius="5" background-color="95244136"
@@ -2508,13 +2508,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOFMFREQ1"/>
+                            parameter="LFOFMFREQ_FM_1"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="94" max-height="77" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH1"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH_FM_1"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2524,7 +2524,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FF00DDE2" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FF4FFFF2"
-                              parameter="LFO_FM_WAVE1" combo-text="FFAAFFF4" caption-placement="centred-top"/>
+                              parameter="LFO_FM_WAVE_FM_1" combo-text="FFAAFFF4" caption-placement="centred-top"/>
                   </View>
                 </View>
                 <View margin="0" padding="0" border="0" radius="0" pos-x="0%" pos-y="50%"
@@ -2546,13 +2546,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOAMFREQ1"/>
+                            parameter="LFOAMFREQ_AM_1"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="94" max-height="77" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH1"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH_AM_1"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2562,7 +2562,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FF00DDE2" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FF4FFFF2"
-                              parameter="LFO_AM_WAVE1" combo-text="FFAAFFF4" flex-align-self="stretch"/>
+                              parameter="LFO_AM_WAVE_AM_1" combo-text="FFAAFFF4" flex-align-self="stretch"/>
                   </View>
                 </View>
               </View>
@@ -2588,13 +2588,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOFMFREQ2"/>
+                            parameter="LFOFMFREQ_FM_2"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="94" max-height="77" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH2"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH_FM_2"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2604,7 +2604,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FFE2A400" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FFFFD74F"
-                              parameter="LFO_FM_WAVE2" combo-text="FFFFDFB5" caption-placement="centred-top"/>
+                              parameter="LFO_FM_WAVE_FM_2" combo-text="FFFFDFB5" caption-placement="centred-top"/>
                   </View>
                 </View>
                 <View margin="0" padding="0" border="0" radius="0" pos-x="0%" pos-y="50%"
@@ -2626,13 +2626,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOAMFREQ2"/>
+                            parameter="LFOAMFREQ_AM_2"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="92" max-height="79" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH2"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH_AM_2"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2642,7 +2642,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FFE2A400" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FFFFD74F"
-                              parameter="LFO_AM_WAVE2" combo-text="FFFFDFB5" flex-align-self="stretch"/>
+                              parameter="LFO_AM_WAVE_AM_2" combo-text="FFFFDFB5" flex-align-self="stretch"/>
                   </View>
                 </View>
               </View>
@@ -2668,13 +2668,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOFMFREQ3"/>
+                            parameter="LFOFMFREQ_FM_3"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="94" max-height="77" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH3"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH_FM_3"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2684,7 +2684,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FF33E200" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FF3FFF07"
-                              parameter="LFO_FM_WAVE3" combo-text="FFC0FF99" caption-placement="centred-top"/>
+                              parameter="LFO_FM_WAVE_FM_3" combo-text="FFC0FF99" caption-placement="centred-top"/>
                   </View>
                 </View>
                 <View margin="0" padding="0" border="0" radius="0" pos-x="0%" pos-y="50%"
@@ -2706,13 +2706,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOAMFREQ3"/>
+                            parameter="LFOAMFREQ_AM_3"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="94" max-height="77" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH3"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH_AM_3"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2722,7 +2722,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FF33E200" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FF3FFF07"
-                              parameter="LFO_AM_WAVE3" combo-text="FFC0FF99" flex-align-self="stretch"/>
+                              parameter="LFO_AM_WAVE_AM_3" combo-text="FFC0FF99" flex-align-self="stretch"/>
                   </View>
                 </View>
               </View>
@@ -2748,13 +2748,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOFMFREQ3"/>
+                            parameter="LFOFMFREQ_FM_4"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="94" max-height="77" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH3"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="FMDEPTH_FM_4"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2764,7 +2764,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FFA1B6FF" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FFA1ADFF"
-                              parameter="LFO_FM_WAVE3" combo-text="FFDFE2FF" caption-placement="centred-top"/>
+                              parameter="LFO_FM_WAVE_FM_4" combo-text="FFDFE2FF" caption-placement="centred-top"/>
                   </View>
                 </View>
                 <View margin="0" padding="0" border="0" radius="0" pos-x="0%" pos-y="50%"
@@ -2786,13 +2786,13 @@
                             slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                             caption-size="18" caption="frequency" caption-color="FFbcced0"
                             min-height="53.3" min-width="65.8" slider-text-outline="8C00E2C6"
-                            parameter="LFOAMFREQ4"/>
+                            parameter="LFOAMFREQ_AM_4"/>
                     <Slider margin="1" padding="0" radius="5" background-color="FF1d382f"
                             slider-type="rotary" pos-x="52%" pos-y="5%" pos-width="44%" pos-height="83%"
                             max-width="94" max-height="77" min-height="53.3" min-width="65.8"
                             slider-text-background="FF0B100F" slider-text="FF40ff12" filmstrip="strip_slider_128_bgr_png"
                             num-filmstrip-images="46" caption-color="FFbcced0" caption-size="18"
-                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH4"/>
+                            caption="depth" slider-text-outline="8C00E2C6" parameter="AMDEPTH_AM_4"/>
                   </View>
                   <View pos-y="72%" pos-height="22%" margin="0.5" padding="0.5" border="0"
                         radius="5" pos-x="0%" pos-width="100%" display="contents" background-color="FF1b2f31">
@@ -2802,7 +2802,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FFA1B6FF" pos-height="69%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FFA1ADFF"
-                              parameter="LFO_AM_WAVE4" combo-text="FFDFE2FF" flex-align-self="stretch"/>
+                              parameter="LFO_AM_WAVE_AM_4" combo-text="FFDFE2FF" flex-align-self="stretch"/>
                   </View>
                 </View>
               </View>
@@ -3104,7 +3104,7 @@
                     <ComboBox pos-width="58%" width="" pos-x="40.5%" margin="2" padding="0"
                               border="1.2" radius="3.5" border-color="FF33E200" pos-height="68%" pos-y="7%"
                               combo-background="FF001814" lookAndFeel="LookAndFeel_V4" combo-arrow="FF3FFF07"
-                              parameter="LFO_FM_WAVE3" combo-text="FFC0FF99" caption-placement="centred-top"/>
+                              parameter="LFO_FM_WAVE_FM_3" combo-text="FFC0FF99" caption-placement="centred-top"/>
                   </View>
                 </View>
 
@@ -4034,14 +4034,14 @@
                               filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                               slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
                               caption-color="FFF2F7CF" caption-size="17" caption="Spectral Tilt"
-                              flex-align-self="stretch" parameter="" pos-width="48.76%"
+                              flex-align-self="stretch" parameter="WT_GEN_SPECTR_TILT" pos-width="48.76%"
                               pos-height="100%" pos-x="0.5%" pos-y="0%" flex-grow="1.0" flex-shrink="1.0"/>
                       <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                               max-height="83" flex-align-self="stretch" min-width="65.8" max-width="94"
                               background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                               slider-text-outline="FF158071" caption-color="FFF2F7CF" caption-size="18"
-                              caption="OddOnlyRatio" parameter="" pos-x="50%" pos-y="0%"
+                              caption="OddOnlyRatio" parameter="WT_GEN_ODD_ONLYRAT" pos-x="50%" pos-y="0%"
                               pos-width="48.76%" pos-height="100%" flex-grow="1.0" flex-shrink="1.0"/>
                     </View>
                     <View margin="1" padding="0" border="0" radius="0" min-width="147"
@@ -4053,14 +4053,14 @@
                               filmstrip="strip_slider_128_bgr_png" num-filmstrip-images="46"
                               slider-text-background="FF060D09" slider-text="FF73FF2C" slider-text-outline="FF158071"
                               caption-color="FFF2F7CF" caption-size="17" caption="PhaseSpread" flex-align-self="stretch"
-                              parameter="" pos-x="0.5%" pos-y="0%" pos-width="48.76%"
+                              parameter="WT_GEN_PHASE_SPREAD" pos-x="0.5%" pos-y="0%" pos-width="48.76%"
                               pos-height="100%"/>
                       <Slider slider-type="rotary" margin="1" padding="0.5" radius="5" min-height="53.3"
                               max-height="83" flex-align-self="stretch" min-width="65.8" max-width="94"
                               background-color="FF244136" filmstrip="strip_slider_128_bgr_png"
                               num-filmstrip-images="46" slider-text="FF73FF2C" slider-text-background="FF060D09"
                               slider-text-outline="FF158071" caption-color="FFF2F7CF" caption-size="18"
-                              caption="morphDrift" parameter="" pos-x="50%" pos-y="0%"
+                              caption="morphDrift" parameter="WT_GEN_MORPH_DRIFT" pos-x="50%" pos-y="0%"
                               pos-width="48.76%" pos-height="100%"/>
                     </View>
                   </View>
@@ -4125,7 +4125,7 @@
                       <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
                                 margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                 combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
-                                lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_MASTER"/>
+                                lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_FM__MASTER"/>
                     </View>
                   </View>
                   <View margin="1.5" padding="0" border="0.6" radius="4" border-color="FF22473c"
@@ -4157,7 +4157,7 @@
                       <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
                                 margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                 combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
-                                lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_MASTER"/>
+                                lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_AM__MASTER"/>
                     </View>
                 </View>
               </View>

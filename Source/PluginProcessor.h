@@ -27,7 +27,7 @@
 #include "UI/DynamicLabelItem.h"
 #include "UI/ParameterValueLabelItem.h"
 #include "Data/MasterEQ.h"
-#include "Components/CustomMouseComponent.h"
+#include "Data/WaveTableGen.h"
 #include "Helpers/PixelFIFO.h"
 #include "Helpers/CBuffer.h"
 #include "Helpers/SfzFileFilter.h"
@@ -67,6 +67,7 @@ struct PropertySamplerBrowseListener;
 struct ParameterVarLambdaListener;
 struct PropertyLfoModulCoreActiveListener;
 struct ParameterDepthLambdaListener;
+struct PropertyWTGenButListener;
 struct PixelUpdate;
 class PropertySpectroListener : public juce::Value::Listener
 {
@@ -417,6 +418,7 @@ private:
     std::vector<std::unique_ptr<ParameterVarLambdaListener>> MyParameterVarLambdaListeners;
     std::vector<std::unique_ptr<PropertyLfoModulCoreActiveListener>> MyPropertyLfoModulCoreActiveListeners;
     std::vector<std::unique_ptr<ParameterDepthLambdaListener>> MyParameterDepthLambdaListeners;
+    std::vector<std::unique_ptr<PropertyWTGenButListener>> MyPropertyWTGenButListeners;
 #pragma endregion LAMBDA_METHODS
 
 #pragma region TEXT_EDITOR
@@ -499,6 +501,7 @@ private:
     std::array<EffekteActiveParam, 4> effekteActiveParams;
 
     void InitEffekteParameters();
+    void InitWaveTableGenParameters();
     void preProcessEffects (const int channelNumbers, const int totalNumOutputCh, juce::AudioBuffer<float>& bufferParam);
     std::array<CBuffer, 2> arrDelayBuffer;
     int mWritePos { 0 };
@@ -514,6 +517,7 @@ private:
     void InitLfoModeParameters();
     void InitializeWTOscTriggers();
     void InitializeGainFilterTriggers();
+    void InitTriggerWTGenParams();
     void InitializeSynthFilterActiveTriggers();
     void InitializeKeybBigSmallTriggers();
     void InitializeAnalysTrigger();
@@ -640,20 +644,18 @@ private:
     //Lfo AM-Modulation Params
     struct juceLfoAmParameters
     {
-        juce::AudioParameterFloat* lfoAmGainParam = nullptr;
-        juce::AudioParameterChoice* lfoAmWaveFormParam = nullptr;
-        juce::AudioParameterFloat* lfoAmFreqParam = nullptr;
-        juce::AudioParameterFloat* lfoAmDepthParam = nullptr;
+        juce::AudioParameterChoice* lfoAmWaveFormParamAm = nullptr;
+        juce::AudioParameterFloat* lfoAmFreqParamAm = nullptr;
+        juce::AudioParameterFloat* lfoAmDepthParamAm = nullptr;
     };
     std::array<juceLfoAmParameters, 4> juceLfoAmParams;
 
     //Lfo Fm-Modulation Params
     struct juceLfoFmParameters
     {
-        juce::AudioParameterFloat* lfoFmGainParam = nullptr;
-        juce::AudioParameterChoice* lfoFmWaveFormParam = nullptr;
-        juce::AudioParameterFloat* lfoFmFreqParam = nullptr;
-        juce::AudioParameterFloat* lfoFmDepthParam = nullptr;
+        juce::AudioParameterChoice* lfoFmWaveFormParamFm = nullptr;
+        juce::AudioParameterFloat* lfoFmFreqParamFm = nullptr;
+        juce::AudioParameterFloat* lfoFmDepthParamFm = nullptr;
     };
     std::array<juceLfoFmParameters, 4> juceLfoFmParams;
 
@@ -784,6 +786,9 @@ private:
     void InitializeMediumTrigger();
     void InitializeMinusTrigger();
     void TriggerKeyBoard();
+    void TriggerStartWtGeneration();
+    void RunWTGeneration();
+
     // the 3 stagers of size:
     enum class GuiScaleStages  { Max, Med, Min };
     GuiScaleStages currentScale = GuiScaleStages::Max;
@@ -851,6 +856,21 @@ private:
     //= end serialization =====================================
 #pragma endregion SERIALIZATION_DECL
 
+#pragma region WAVE_TABLE_GEN
+
+    struct WaveTablePtr
+    {
+        juce::AudioParameterFloat* spectralTiltPtr = nullptr;
+        juce::AudioParameterFloat* oddOnlyRatioPtr = nullptr;
+        juce::AudioParameterFloat* phaseSpreadPtr = nullptr;
+        juce::AudioParameterFloat* morphDriftPtr = nullptr;
+        juce::AudioParameterBool* startGenPtr = nullptr;
+    };
+    WaveTablePtr waveTablePtrs;
+    juce::File wtTargetDirectory;
+
+#pragma endregion WAVE_TABLE_GEN
+
 #pragma region OTHER_STUFF
     void updateLabelColor(const juce::String& elementId, const juce::String& hexColorWithAlpha);
     static juce::ValueTree findNodeById(juce::ValueTree tree, const juce::String& targetId);
@@ -883,6 +903,8 @@ private:
     std::array<int, 4> lastLfoAmWaveForm = {0, 0, 0, 0};
     std::array<bool, 4> lastIswtActive = {true, true, true, true};
     std::array<int, 4> lastIndexModuklCoreWaveForm = {0, 1, 2};
+    bool lastStartWTGen = {false};
+    bool firstInit = {true};
 #pragma endregion OTHER_STUFF
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor);
