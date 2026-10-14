@@ -60,6 +60,7 @@ target_sources(Kryptosync PRIVATE
 		Source/Data/MasterEQ.h
 		Source/Data/FormantFilter.h
 		Source/Data/FormantFilter.cpp
+		Source/Data/WaveTableGen.h
 		Source/UI/SpectrogramMatrixItem.cpp
 		Source/UI/SpectrogramMatrixItem.h
 		Source/UI/SampleBrowserItem.cpp

@@ -3676,7 +3676,7 @@ void AudioPluginAudioProcessor::TriggerKeyBoard()
 
 void AudioPluginAudioProcessor::TriggerStartWtGeneration()
 {
-    /*const int currentWTGenStart = waveTablePtrs.startGenPtr->get();
+    const int currentWTGenStart = waveTablePtrs.startGenPtr->get();
     if (firstInit)
     {
         lastStartWTGen = true;
@@ -3699,25 +3699,25 @@ void AudioPluginAudioProcessor::TriggerStartWtGeneration()
         }   
 
     }
-    lastStartWTGen = currentWTGenStart;*/
+    lastStartWTGen = currentWTGenStart;
 }
 
 void AudioPluginAudioProcessor::RunWTGeneration()
 {
-    /*WTConfig.spectralTilt = (* waveTablePtrs.spectralTiltPtr);
+    WTConfig.spectralTilt = (* waveTablePtrs.spectralTiltPtr);
     WTConfig.oddOnlyRatio = (* waveTablePtrs.oddOnlyRatioPtr);
     WTConfig.phaseSpread = (* waveTablePtrs.phaseSpreadPtr);
     WTConfig.morphDrift = (* waveTablePtrs.morphDriftPtr);
     WTConfig.startGen = (*waveTablePtrs.startGenPtr) = false;
-    WTConfig.randomSeed = 1337;*/
+    WTConfig.randomSeed = 1337;
 #ifdef _DEBUG
     wtTargetDirectory = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/Wav_Wavetables/");
 #else
-    /*auto pluginBinary = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    auto pluginBinary = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
     wtTargetDirectory = pluginBinary.getParentDirectory()
-                                         .getChildFile ("/Wav_Wavetables/");*/
+                                         .getChildFile ("/Wav_Wavetables/");
 #endif
-    /*wtTargetDirectory = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/Wav_Wavetables/");
+    wtTargetDirectory = juce::File ("/home/tommibe/Development/newAudio/KryptoSyn/Wav_Wavetables/");
     const auto genWTfile = wtTargetDirectory;
         //.getChildFile("HyperHollow_2048.wav");
 
@@ -3733,30 +3733,7 @@ void AudioPluginAudioProcessor::RunWTGeneration()
         if (juce::AudioParameterBool* p = waveTablePtrs.startGenPtr) {
             p->setValueNotifyingHost (newVal ? 1.0f : 0.0f);
         }
-    }));*/
-    /*if (result)
-    {
-        juce::ValueTree node = magicState.getValueTree();
-        if ( node.hasProperty("startGenWT"))
-        {
-            auto val = magicState.getPropertyAsValue ("startGenWT");
-            //const auto val = magicState.getProperty (prop);
-            bool isAct = false;
-
-            if (auto boolVal = val.getValue().isBool())
-                isAct = static_cast<bool> (boolVal);
-            else if (val.getValue().isInt() || val.getValue().isInt64())
-                isAct = (static_cast<int> (boolVal) != 0);
-            else
-                isAct = (val.toString() == "1" || val.toString().equalsIgnoreCase ("true"));
-
-            if (auto* p = waveTablePtrs.startGenPtr)
-                p->setValueNotifyingHost (isAct ? 1.0f : 0.0f);
-
-            juce::String propName = "startGenWT";
-            magicState.getPropertyAsValue (propName).setValue (isAct);
-        }
-    }*/
+    }));
 }
 //= begin serialization ======================================================================
 // ── save ────────────────────────────────────────────────

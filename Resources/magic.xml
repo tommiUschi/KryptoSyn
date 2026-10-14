@@ -4125,7 +4125,7 @@
                       <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
                                 margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                 combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
-                                lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_FM__MASTER"/>
+                                lookAndFeel="LookAndFeel_V4" parameter="LFO_FM_WAVE_MASTER"/>
                     </View>
                   </View>
                   <View margin="1.5" padding="0" border="0.6" radius="4" border-color="FF22473c"
@@ -4157,7 +4157,7 @@
                       <ComboBox pos-height="53%" pos-x="2.2%" pos-width="96%" border-color="FF00DDE2"
                                 margin="2" padding="0" border="1.2" radius="3.5" pos-y="32%"
                                 combo-background="FF0D1E02" combo-text="FFE6F3C6" combo-arrow="FF2DD3C6"
-                                lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_AM__MASTER"/>
+                                lookAndFeel="LookAndFeel_V4" parameter="LFO_AM_WAVE_MASTER"/>
                     </View>
                 </View>
               </View>
@@ -4244,7 +4244,7 @@
                           slider-track="B500FFB3" slider-thumb="FF00DD9B" slider-background="0000FF9F"
                           lookAndFeel="LookAndFeel_V4" caption="wt B" caption-size="21"
                           caption-color="FFDEFFC0" min-value="20%" min-width="32.13" background-image="decibel_png"
-                          image-placement="stretch" parameter="VOLUMEwT_3"/>
+                          image-placement="stretch" parameter="VOLUMEwT_2"/>
                   <View flex-grow="1.0" margin="0" padding="1" border="0" radius="2"
                         background-color="FF000000" min-height="19" max-height="22"
                         min-width="24" max-width="37" pos-x="0%" pos-y="0%" pos-width="25%"
@@ -4257,7 +4257,7 @@
                   </View>
                   <Meter max-width="14.4" pos-width="27%" pos-x="70%" pos-height="92%"
                          pos-y="5.6%" margin="1" padding="0.5" border="2" radius="4" background-color="FF172927"
-                         border-color="FF142321" bar-fill-color="FF4dff63" source="outputWtMet_M_OscC"
+                         border-color="FF142321" bar-fill-color="FF4dff63" source="outputWtMet_M_OscB"
                          bar-background-color="A937413A" outline-color="A9748479" tickmark-color="FFFFAC00"/>
                   <View background-color="00FFFFFF" pos-x="64%" pos-y="5.5%" pos-width="39.5%"
                         pos-height="96%" background-image="meterColorMask_png"/>
@@ -4270,7 +4270,7 @@
                           slider-track="B500FFB3" slider-thumb="FF00DD9B" slider-background="0000FF9F"
                           lookAndFeel="LookAndFeel_V4" caption="wt C" caption-size="21"
                           caption-color="FFDEFFC0" min-value="20%" min-width="32.13" background-image="decibel_png"
-                          image-placement="stretch" parameter="VOLUMEwT_2"/>
+                          image-placement="stretch" parameter="VOLUMEwT_3"/>
                   <View flex-grow="1.0" margin="0" padding="1" border="0" radius="2"
                         background-color="FF000000" min-height="19" max-height="22"
                         min-width="24" max-width="37" pos-x="0%" pos-y="0%" pos-width="25%"
@@ -4283,7 +4283,7 @@
                   </View>
                   <Meter max-width="14.4" pos-width="27%" pos-x="70.6%" pos-height="92%"
                          pos-y="5.6%" margin="1" padding="0.5" border="2" radius="4" background-color="FF172927"
-                         border-color="FF142321" bar-fill-color="FF4dff63" source="outputWtMet_M_OscB"
+                         border-color="FF142321" bar-fill-color="FF4dff63" source="outputWtMet_M_OscC"
                          bar-background-color="A937413A" outline-color="A9748479" tickmark-color="FFFFAC00"/>
                   <View background-color="00FFFFFF" pos-x="64%" pos-y="5.5%" pos-width="39.5%"
                         pos-height="96%" background-image="meterColorMask_png"/>
